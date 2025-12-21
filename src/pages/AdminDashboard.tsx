@@ -7,25 +7,27 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { AdminSidebar } from "@/components/admin/AdminSidebar";
+import { AnalyticsDashboard } from "@/components/admin/AnalyticsDashboard";
 import { FormFieldsManager } from "@/components/admin/FormFieldsManager";
 import * as XLSX from "xlsx";
+import { cn } from "@/lib/utils";
 import { 
-  LayoutDashboard, FileText, Settings, LogOut, Trophy, Heart, Wallet, Globe, 
-  Eye, CheckCircle, XCircle, Clock, Plus, Loader2, ExternalLink, Key, Download, FormInput
+  Trophy, Heart, Wallet, Globe, 
+  Eye, CheckCircle, XCircle, Clock, Plus, Loader2, ExternalLink, Download, Menu
 } from "lucide-react";
 
 type ScholarshipCategory = "prestasi" | "yatim" | "ekonomi" | "umum";
 type SubmissionStatus = "menunggu" | "diverifikasi" | "ditolak";
 
-const categoryLabels: Record<ScholarshipCategory, { label: string; icon: any; color: string }> = {
-  prestasi: { label: "Prestasi", icon: Trophy, color: "bg-amber-500" },
-  yatim: { label: "Yatim", icon: Heart, color: "bg-rose-500" },
-  ekonomi: { label: "Ekonomi", icon: Wallet, color: "bg-emerald-500" },
-  umum: { label: "Umum", icon: Globe, color: "bg-blue-500" },
+const categoryLabels: Record<ScholarshipCategory, { label: string; icon: any; gradient: string; bgLight: string }> = {
+  prestasi: { label: "Prestasi", icon: Trophy, gradient: "from-amber-500 to-orange-500", bgLight: "bg-amber-500/10" },
+  yatim: { label: "Yatim", icon: Heart, gradient: "from-rose-500 to-pink-500", bgLight: "bg-rose-500/10" },
+  ekonomi: { label: "Ekonomi", icon: Wallet, gradient: "from-emerald-500 to-teal-500", bgLight: "bg-emerald-500/10" },
+  umum: { label: "Umum", icon: Globe, gradient: "from-blue-500 to-indigo-500", bgLight: "bg-blue-500/10" },
 };
 
 const statusLabels: Record<SubmissionStatus, { label: string; variant: "default" | "secondary" | "destructive" }> = {
@@ -37,6 +39,8 @@ const statusLabels: Record<SubmissionStatus, { label: string; variant: "default"
 const AdminDashboard = () => {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState("dashboard");
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const [submissions, setSubmissions] = useState<any[]>([]);
   const [tokens, setTokens] = useState<any[]>([]);
   const [selectedSubmission, setSelectedSubmission] = useState<any>(null);
@@ -46,16 +50,14 @@ const AdminDashboard = () => {
   const [newTokenCategory, setNewTokenCategory] = useState<ScholarshipCategory>("prestasi");
   const [isAddingToken, setIsAddingToken] = useState(false);
   
-  // OneSender settings
+  // Settings
   const [oneSenderApiUrl, setOneSenderApiUrl] = useState("");
   const [oneSenderApiKey, setOneSenderApiKey] = useState("");
   const [oneSenderPhone, setOneSenderPhone] = useState("");
   const [whatsappTemplate, setWhatsappTemplate] = useState("");
-  
-  // Mayar API settings
   const [mayarApiKey, setMayarApiKey] = useState("");
 
-  // Stats per category
+  // Stats
   const [categoryStats, setCategoryStats] = useState<Record<ScholarshipCategory, { total: number; menunggu: number; diverifikasi: number; ditolak: number }>>({
     prestasi: { total: 0, menunggu: 0, diverifikasi: 0, ditolak: 0 },
     yatim: { total: 0, menunggu: 0, diverifikasi: 0, ditolak: 0 },
@@ -91,7 +93,6 @@ const AdminDashboard = () => {
   const fetchData = async () => {
     setIsLoading(true);
     try {
-      // Fetch submissions
       const { data: subs, error: subsError } = await supabase
         .from("scholarship_submissions")
         .select("*")
@@ -100,7 +101,7 @@ const AdminDashboard = () => {
       if (subsError) throw subsError;
       setSubmissions(subs || []);
 
-      // Calculate stats per category
+      // Calculate stats
       const stats: Record<ScholarshipCategory, { total: number; menunggu: number; diverifikasi: number; ditolak: number }> = {
         prestasi: { total: 0, menunggu: 0, diverifikasi: 0, ditolak: 0 },
         yatim: { total: 0, menunggu: 0, diverifikasi: 0, ditolak: 0 },
@@ -120,7 +121,6 @@ const AdminDashboard = () => {
 
       setCategoryStats(stats);
 
-      // Fetch tokens
       const { data: toks, error: toksError } = await supabase
         .from("scholarship_tokens")
         .select("*")
@@ -130,10 +130,7 @@ const AdminDashboard = () => {
       setTokens(toks || []);
 
       // Fetch settings
-      const { data: settings } = await supabase
-        .from("admin_settings")
-        .select("*");
-
+      const { data: settings } = await supabase.from("admin_settings").select("*");
       if (settings) {
         const apiUrl = settings.find(s => s.setting_key === "onesender_api_url");
         const apiKey = settings.find(s => s.setting_key === "onesender_api_key");
@@ -254,6 +251,13 @@ const AdminDashboard = () => {
   });
 
   const currentStats = categoryStats[selectedCategory];
+  const usedTokens = tokens.filter(t => t.status === "digunakan").length;
+  const recentSubmissions = submissions.filter(s => {
+    const submitDate = new Date(s.submitted_at);
+    const weekAgo = new Date();
+    weekAgo.setDate(weekAgo.getDate() - 7);
+    return submitDate >= weekAgo;
+  }).length;
 
   if (isLoading) {
     return (
@@ -264,161 +268,196 @@ const AdminDashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-muted/30">
-      {/* Header */}
-      <header className="bg-card border-b sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center">
-              <LayoutDashboard className="w-5 h-5 text-primary-foreground" />
-            </div>
-            <div>
-              <h1 className="font-bold text-foreground">Dashboard Admin</h1>
-              <p className="text-xs text-muted-foreground">Beasiswa Ayo Pintar</p>
+    <div className="min-h-screen flex bg-muted/30">
+      {/* Sidebar */}
+      <div className={cn("hidden lg:block", sidebarOpen ? "block" : "hidden")}>
+        <AdminSidebar activeTab={activeTab} onTabChange={setActiveTab} onLogout={handleLogout} />
+      </div>
+
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col min-h-screen overflow-hidden">
+        {/* Mobile Header */}
+        <header className="lg:hidden bg-card border-b p-4 flex items-center justify-between">
+          <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(!sidebarOpen)}>
+            <Menu className="w-5 h-5" />
+          </Button>
+          <h1 className="font-bold">Admin Panel</h1>
+          <div />
+        </header>
+
+        {/* Mobile Sidebar */}
+        {sidebarOpen && (
+          <div className="lg:hidden fixed inset-0 z-50 bg-background/80 backdrop-blur-sm" onClick={() => setSidebarOpen(false)}>
+            <div className="fixed left-0 top-0 h-full" onClick={e => e.stopPropagation()}>
+              <AdminSidebar activeTab={activeTab} onTabChange={(tab) => { setActiveTab(tab); setSidebarOpen(false); }} onLogout={handleLogout} />
             </div>
           </div>
-          <Button variant="ghost" size="sm" onClick={handleLogout}>
-            <LogOut className="w-4 h-4 mr-2" /> Keluar
-          </Button>
-        </div>
-      </header>
+        )}
 
-      <main className="container mx-auto px-4 py-8">
-        {/* Main Tabs */}
-        <Tabs defaultValue="submissions">
-          <TabsList className="mb-6">
-            <TabsTrigger value="submissions"><FileText className="w-4 h-4 mr-2" /> Data Pengajuan</TabsTrigger>
-            <TabsTrigger value="tokens"><Key className="w-4 h-4 mr-2" /> Kode Token</TabsTrigger>
-            <TabsTrigger value="form-fields"><FormInput className="w-4 h-4 mr-2" /> Kelola Form</TabsTrigger>
-            <TabsTrigger value="settings"><Settings className="w-4 h-4 mr-2" /> Pengaturan</TabsTrigger>
-          </TabsList>
+        {/* Content Area */}
+        <main className="flex-1 overflow-y-auto p-6">
+          {/* Dashboard */}
+          {activeTab === "dashboard" && (
+            <AnalyticsDashboard 
+              categoryStats={categoryStats} 
+              totalTokens={tokens.length}
+              usedTokens={usedTokens}
+              recentSubmissions={recentSubmissions}
+            />
+          )}
 
-          {/* Submissions Tab */}
-          <TabsContent value="submissions">
-            {/* Category Tabs */}
-            <Tabs value={selectedCategory} onValueChange={(v) => setSelectedCategory(v as ScholarshipCategory)} className="mb-6">
-              <TabsList className="grid grid-cols-4 w-full max-w-lg">
+          {/* Submissions */}
+          {activeTab === "submissions" && (
+            <div className="space-y-6">
+              <div>
+                <h1 className="text-2xl font-bold text-foreground">Data Pengajuan</h1>
+                <p className="text-muted-foreground">Kelola pengajuan beasiswa dari semua kategori</p>
+              </div>
+
+              {/* Category Selection */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {(Object.keys(categoryLabels) as ScholarshipCategory[]).map((cat) => {
-                  const { label, icon: Icon } = categoryLabels[cat];
+                  const config = categoryLabels[cat];
+                  const Icon = config.icon;
+                  const isActive = selectedCategory === cat;
+                  const stats = categoryStats[cat];
+
                   return (
-                    <TabsTrigger key={cat} value={cat} className="gap-2">
-                      <Icon className="w-4 h-4" />
-                      <span className="hidden sm:inline">{label}</span>
-                    </TabsTrigger>
+                    <button
+                      key={cat}
+                      onClick={() => setSelectedCategory(cat)}
+                      className={cn(
+                        "p-4 rounded-xl transition-all duration-200 text-left group",
+                        isActive 
+                          ? "bg-card shadow-lg ring-2 ring-primary" 
+                          : "bg-card/50 hover:bg-card hover:shadow-md"
+                      )}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className={cn(
+                          "w-12 h-12 rounded-xl flex items-center justify-center bg-gradient-to-br shadow-lg transition-transform group-hover:scale-105",
+                          config.gradient
+                        )}>
+                          <Icon className="w-6 h-6 text-white" />
+                        </div>
+                        <div>
+                          <p className="font-bold text-lg">{stats.total}</p>
+                          <p className="text-sm text-muted-foreground">{config.label}</p>
+                        </div>
+                      </div>
+                    </button>
                   );
                 })}
-              </TabsList>
-            </Tabs>
+              </div>
 
-            {/* Stats for selected category */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-              <Card>
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                      <FileText className="w-5 h-5 text-primary" />
+              {/* Stats for selected category */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <Card>
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-3">
+                      <div className={cn("w-10 h-10 rounded-lg flex items-center justify-center bg-gradient-to-br", categoryLabels[selectedCategory].gradient)}>
+                        {(() => { const Icon = categoryLabels[selectedCategory].icon; return <Icon className="w-5 h-5 text-white" />; })()}
+                      </div>
+                      <div>
+                        <p className="text-2xl font-bold">{currentStats.total}</p>
+                        <p className="text-xs text-muted-foreground">Total</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-2xl font-bold">{currentStats.total}</p>
-                      <p className="text-xs text-muted-foreground">Total</p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-warning/10 flex items-center justify-center">
+                        <Clock className="w-5 h-5 text-warning" />
+                      </div>
+                      <div>
+                        <p className="text-2xl font-bold">{currentStats.menunggu}</p>
+                        <p className="text-xs text-muted-foreground">Menunggu</p>
+                      </div>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-lg bg-warning/10 flex items-center justify-center">
-                      <Clock className="w-5 h-5 text-warning" />
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-success/10 flex items-center justify-center">
+                        <CheckCircle className="w-5 h-5 text-success" />
+                      </div>
+                      <div>
+                        <p className="text-2xl font-bold">{currentStats.diverifikasi}</p>
+                        <p className="text-xs text-muted-foreground">Diverifikasi</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-2xl font-bold">{currentStats.menunggu}</p>
-                      <p className="text-xs text-muted-foreground">Menunggu</p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-destructive/10 flex items-center justify-center">
+                        <XCircle className="w-5 h-5 text-destructive" />
+                      </div>
+                      <div>
+                        <p className="text-2xl font-bold">{currentStats.ditolak}</p>
+                        <p className="text-xs text-muted-foreground">Ditolak</p>
+                      </div>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-lg bg-success/10 flex items-center justify-center">
-                      <CheckCircle className="w-5 h-5 text-success" />
-                    </div>
-                    <div>
-                      <p className="text-2xl font-bold">{currentStats.diverifikasi}</p>
-                      <p className="text-xs text-muted-foreground">Diverifikasi</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-lg bg-destructive/10 flex items-center justify-center">
-                      <XCircle className="w-5 h-5 text-destructive" />
-                    </div>
-                    <div>
-                      <p className="text-2xl font-bold">{currentStats.ditolak}</p>
-                      <p className="text-xs text-muted-foreground">Ditolak</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+                  </CardContent>
+                </Card>
+              </div>
 
-            <Card>
-              <CardHeader>
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <div>
-                    <CardTitle>Data Pengajuan - {categoryLabels[selectedCategory].label}</CardTitle>
-                    <CardDescription>Kelola pengajuan beasiswa {categoryLabels[selectedCategory].label}</CardDescription>
+              <Card>
+                <CardHeader>
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                      <CardTitle>Data Pengajuan - {categoryLabels[selectedCategory].label}</CardTitle>
+                      <CardDescription>Kelola pengajuan beasiswa {categoryLabels[selectedCategory].label}</CardDescription>
+                    </div>
+                    <div className="flex gap-2">
+                      <Select value={filterStatus} onValueChange={setFilterStatus}>
+                        <SelectTrigger className="w-[140px]"><SelectValue placeholder="Status" /></SelectTrigger>
+                        <SelectContent className="bg-card border">
+                          <SelectItem value="all">Semua Status</SelectItem>
+                          <SelectItem value="menunggu">Menunggu</SelectItem>
+                          <SelectItem value="diverifikasi">Diverifikasi</SelectItem>
+                          <SelectItem value="ditolak">Ditolak</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <Button variant="outline" onClick={() => exportToExcel(selectedCategory)}>
+                        <Download className="w-4 h-4 mr-2" /> Export Excel
+                      </Button>
+                    </div>
                   </div>
-                  <div className="flex gap-2">
-                    <Select value={filterStatus} onValueChange={setFilterStatus}>
-                      <SelectTrigger className="w-[140px]"><SelectValue placeholder="Status" /></SelectTrigger>
-                      <SelectContent className="bg-card border">
-                        <SelectItem value="all">Semua Status</SelectItem>
-                        <SelectItem value="menunggu">Menunggu</SelectItem>
-                        <SelectItem value="diverifikasi">Diverifikasi</SelectItem>
-                        <SelectItem value="ditolak">Ditolak</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <Button variant="outline" onClick={() => exportToExcel(selectedCategory)}>
-                      <Download className="w-4 h-4 mr-2" /> Export Excel
-                    </Button>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Nama</TableHead>
-                        <TableHead>Status Pendaftar</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Tanggal</TableHead>
-                        <TableHead>Aksi</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredSubmissions.map((sub) => {
-                        const stat = statusLabels[sub.status as SubmissionStatus];
-                        return (
-                          <TableRow key={sub.id}>
-                            <TableCell>
-                              <div>
-                                <p className="font-medium">{sub.full_name}</p>
-                                <p className="text-xs text-muted-foreground">{sub.email}</p>
-                              </div>
-                            </TableCell>
-                            <TableCell className="capitalize">{sub.applicant_status?.replace("_", " ")}</TableCell>
-                            <TableCell>
-                              <Badge variant={stat.variant}>{stat.label}</Badge>
-                            </TableCell>
-                            <TableCell>{new Date(sub.submitted_at).toLocaleDateString("id-ID")}</TableCell>
-                            <TableCell>
-                              <div className="flex gap-2">
+                </CardHeader>
+                <CardContent>
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Nama</TableHead>
+                          <TableHead>Status Pendaftar</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead>Tanggal</TableHead>
+                          <TableHead>Aksi</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredSubmissions.map((sub) => {
+                          const stat = statusLabels[sub.status as SubmissionStatus];
+                          return (
+                            <TableRow key={sub.id}>
+                              <TableCell>
+                                <div>
+                                  <p className="font-medium">{sub.full_name}</p>
+                                  <p className="text-xs text-muted-foreground">{sub.email}</p>
+                                </div>
+                              </TableCell>
+                              <TableCell className="capitalize">{sub.applicant_status?.replace("_", " ")}</TableCell>
+                              <TableCell>
+                                <Badge variant={stat.variant}>{stat.label}</Badge>
+                              </TableCell>
+                              <TableCell>{new Date(sub.submitted_at).toLocaleDateString("id-ID")}</TableCell>
+                              <TableCell>
                                 <Dialog>
                                   <DialogTrigger asChild>
                                     <Button variant="ghost" size="icon" onClick={() => setSelectedSubmission(sub)}>
@@ -481,136 +520,160 @@ const AdminDashboard = () => {
                                     )}
                                   </DialogContent>
                                 </Dialog>
-                              </div>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                        {filteredSubmissions.length === 0 && (
+                          <TableRow>
+                            <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                              Tidak ada data pengajuan
                             </TableCell>
+                          </TableRow>
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
+          {/* Tokens */}
+          {activeTab === "tokens" && (
+            <div className="space-y-6">
+              <div>
+                <h1 className="text-2xl font-bold text-foreground">Manajemen Token</h1>
+                <p className="text-muted-foreground">Kelola kode token untuk validasi pendaftaran</p>
+              </div>
+
+              <Card>
+                <CardHeader>
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <CardTitle>Tambah Token Baru</CardTitle>
+                    <div className="flex gap-2">
+                      <Input placeholder="Kode token baru" value={newTokenCode} onChange={(e) => setNewTokenCode(e.target.value.toUpperCase())} className="w-[160px] uppercase" />
+                      <Select value={newTokenCategory} onValueChange={(v) => setNewTokenCategory(v as ScholarshipCategory)}>
+                        <SelectTrigger className="w-[130px]">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="bg-card border">
+                          {(Object.keys(categoryLabels) as ScholarshipCategory[]).map((cat) => {
+                            const config = categoryLabels[cat];
+                            const Icon = config.icon;
+                            return (
+                              <SelectItem key={cat} value={cat}>
+                                <div className="flex items-center gap-2">
+                                  <Icon className="w-4 h-4" />
+                                  {config.label}
+                                </div>
+                              </SelectItem>
+                            );
+                          })}
+                        </SelectContent>
+                      </Select>
+                      <Button onClick={addToken} disabled={isAddingToken}>
+                        {isAddingToken ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                      </Button>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Kode Token</TableHead>
+                        <TableHead>Kategori</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Dibuat</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {tokens.map((token) => {
+                        const cat = categoryLabels[token.category as ScholarshipCategory];
+                        const Icon = cat.icon;
+                        return (
+                          <TableRow key={token.id}>
+                            <TableCell className="font-mono font-bold">{token.token_code}</TableCell>
+                            <TableCell>
+                              <Badge variant="outline" className="gap-1">
+                                <Icon className="w-3 h-3" /> {cat.label}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant={token.status === "valid" ? "default" : token.status === "digunakan" ? "secondary" : "destructive"}>
+                                {token.status === "valid" ? "Valid" : token.status === "digunakan" ? "Digunakan" : "Tidak Valid"}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>{new Date(token.created_at).toLocaleDateString("id-ID")}</TableCell>
                           </TableRow>
                         );
                       })}
-                      {filteredSubmissions.length === 0 && (
-                        <TableRow>
-                          <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                            Tidak ada data pengajuan
-                          </TableCell>
-                        </TableRow>
-                      )}
                     </TableBody>
                   </Table>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
+                </CardContent>
+              </Card>
+            </div>
+          )}
 
-          {/* Tokens Tab */}
-          <TabsContent value="tokens">
-            <Card>
-              <CardHeader>
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <div>
-                    <CardTitle>Manajemen Kode Token</CardTitle>
-                    <CardDescription>Kelola kode token untuk validasi pendaftaran</CardDescription>
-                  </div>
-                  <div className="flex gap-2">
-                    <Input placeholder="Kode token baru" value={newTokenCode} onChange={(e) => setNewTokenCode(e.target.value.toUpperCase())} className="w-[160px] uppercase" />
-                    <Select value={newTokenCategory} onValueChange={(v) => setNewTokenCategory(v as ScholarshipCategory)}>
-                      <SelectTrigger className="w-[120px]"><SelectValue /></SelectTrigger>
-                      <SelectContent className="bg-card border">
-                        <SelectItem value="prestasi">Prestasi</SelectItem>
-                        <SelectItem value="yatim">Yatim</SelectItem>
-                        <SelectItem value="ekonomi">Ekonomi</SelectItem>
-                        <SelectItem value="umum">Umum</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <Button onClick={addToken} disabled={isAddingToken}>
-                      {isAddingToken ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-                    </Button>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Kode Token</TableHead>
-                      <TableHead>Kategori</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Dibuat</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {tokens.map((token) => {
-                      const cat = categoryLabels[token.category as ScholarshipCategory];
-                      return (
-                        <TableRow key={token.id}>
-                          <TableCell className="font-mono font-bold">{token.token_code}</TableCell>
-                          <TableCell><Badge variant="outline"><cat.icon className="w-3 h-3 mr-1" /> {cat.label}</Badge></TableCell>
-                          <TableCell>
-                            <Badge variant={token.status === "valid" ? "default" : token.status === "digunakan" ? "secondary" : "destructive"}>
-                              {token.status === "valid" ? "Valid" : token.status === "digunakan" ? "Digunakan" : "Tidak Valid"}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>{new Date(token.created_at).toLocaleDateString("id-ID")}</TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          </TabsContent>
+          {/* Form Fields */}
+          {activeTab === "form-fields" && <FormFieldsManager />}
 
-          {/* Form Fields Tab */}
-          <TabsContent value="form-fields">
-            <FormFieldsManager />
-          </TabsContent>
+          {/* Settings */}
+          {activeTab === "settings" && (
+            <div className="space-y-6">
+              <div>
+                <h1 className="text-2xl font-bold text-foreground">Pengaturan</h1>
+                <p className="text-muted-foreground">Konfigurasi API dan integrasi</p>
+              </div>
 
-          {/* Settings Tab */}
-          <TabsContent value="settings" className="space-y-6">
-            {/* Mayar API Settings */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Pengaturan Mayar API</CardTitle>
-                <CardDescription>Konfigurasi API Key Mayar untuk validasi token beasiswa</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">API Key Mayar</label>
-                  <Input type="password" placeholder="Masukkan API Key Mayar" value={mayarApiKey} onChange={(e) => setMayarApiKey(e.target.value)} />
-                  <p className="text-xs text-muted-foreground">API Key ini digunakan untuk memvalidasi kode token dari Mayar</p>
-                </div>
-              </CardContent>
-            </Card>
+              <div className="grid gap-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Pengaturan Mayar API</CardTitle>
+                    <CardDescription>Konfigurasi API Key Mayar untuk validasi token beasiswa</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">API Key Mayar</label>
+                      <Input type="password" placeholder="Masukkan API Key Mayar" value={mayarApiKey} onChange={(e) => setMayarApiKey(e.target.value)} />
+                      <p className="text-xs text-muted-foreground">API Key ini digunakan untuk memvalidasi kode token dari Mayar</p>
+                    </div>
+                  </CardContent>
+                </Card>
 
-            {/* OneSender Settings */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Pengaturan OneSender (WhatsApp)</CardTitle>
-                <CardDescription>Konfigurasi integrasi WhatsApp untuk notifikasi otomatis</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">API URL OneSender</label>
-                  <Input placeholder="https://api.onesender.com/v1/send" value={oneSenderApiUrl} onChange={(e) => setOneSenderApiUrl(e.target.value)} />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">API Key OneSender</label>
-                  <Input type="password" placeholder="Masukkan API Key" value={oneSenderApiKey} onChange={(e) => setOneSenderApiKey(e.target.value)} />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Nomor Pengirim</label>
-                  <Input placeholder="628xxxxxxxxxx" value={oneSenderPhone} onChange={(e) => setOneSenderPhone(e.target.value)} />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Template Pesan WhatsApp</label>
-                  <p className="text-xs text-muted-foreground">Variabel: {"{{nama}}, {{kategori_beasiswa}}, {{status_pendaftar}}, {{tanggal_submit}}"}</p>
-                  <Textarea placeholder="Contoh: Halo {{nama}}, pengajuan beasiswa {{kategori_beasiswa}} Anda telah diterima..." value={whatsappTemplate} onChange={(e) => setWhatsappTemplate(e.target.value)} className="min-h-[120px]" />
-                </div>
-              </CardContent>
-            </Card>
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Pengaturan OneSender (WhatsApp)</CardTitle>
+                    <CardDescription>Konfigurasi integrasi WhatsApp untuk notifikasi otomatis</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">API URL OneSender</label>
+                      <Input placeholder="https://api.onesender.com/v1/send" value={oneSenderApiUrl} onChange={(e) => setOneSenderApiUrl(e.target.value)} />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">API Key OneSender</label>
+                      <Input type="password" placeholder="Masukkan API Key" value={oneSenderApiKey} onChange={(e) => setOneSenderApiKey(e.target.value)} />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Nomor Pengirim</label>
+                      <Input placeholder="628xxxxxxxxxx" value={oneSenderPhone} onChange={(e) => setOneSenderPhone(e.target.value)} />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Template Pesan WhatsApp</label>
+                      <p className="text-xs text-muted-foreground">Variabel: {"{{nama}}, {{kategori_beasiswa}}, {{status_pendaftar}}, {{tanggal_submit}}"}</p>
+                      <Textarea placeholder="Contoh: Halo {{nama}}, pengajuan beasiswa {{kategori_beasiswa}} Anda telah diterima..." value={whatsappTemplate} onChange={(e) => setWhatsappTemplate(e.target.value)} className="min-h-[120px]" />
+                    </div>
+                  </CardContent>
+                </Card>
 
-            <Button onClick={saveSettings} className="w-full sm:w-auto">Simpan Semua Pengaturan</Button>
-          </TabsContent>
-        </Tabs>
-      </main>
+                <Button onClick={saveSettings} className="w-full sm:w-auto">Simpan Semua Pengaturan</Button>
+              </div>
+            </div>
+          )}
+        </main>
+      </div>
     </div>
   );
 };
