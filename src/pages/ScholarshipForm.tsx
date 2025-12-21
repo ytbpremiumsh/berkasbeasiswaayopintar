@@ -201,7 +201,11 @@ const ScholarshipForm = () => {
           <div className="space-y-6 animate-fade-in">
             <TokenValidator
               category={validCategory}
-              onValidToken={(id) => updateFormData("tokenId", id)}
+              onValidToken={(id, customerName, customerEmail) => {
+                updateFormData("tokenId", id);
+                if (customerName) updateFormData("fullName", customerName);
+                if (customerEmail) updateFormData("email", customerEmail);
+              }}
               value={formData.tokenId ? "VALIDATED" : ""}
             />
           </div>
