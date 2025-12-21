@@ -51,7 +51,7 @@ const ScholarshipForm = () => {
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [user, setUser] = useState<any>(null);
+  const [sessionId] = useState(() => crypto.randomUUID());
   
   const [formData, setFormData] = useState<FormData>({
     tokenId: "",
@@ -77,23 +77,6 @@ const ScholarshipForm = () => {
 
   const validCategory = category as ScholarshipCategory;
   const info = categoryInfo[validCategory];
-
-  useEffect(() => {
-    const checkAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      setUser(session?.user || null);
-      if (session?.user?.email) {
-        setFormData(prev => ({ ...prev, email: session.user.email || "" }));
-      }
-    };
-    checkAuth();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
-      setUser(session?.user || null);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
 
   if (!info) {
     return (
@@ -142,47 +125,38 @@ const ScholarshipForm = () => {
   };
 
   const handleSubmit = async () => {
-    if (!user) {
-      toast({ title: "Harap login terlebih dahulu", variant: "destructive" });
-      navigate("/auth");
-      return;
-    }
-
     setIsSubmitting(true);
 
     try {
-      // Update token status
-      await supabase
-        .from("scholarship_tokens")
-        .update({ status: "digunakan", used_by: user.id, used_at: new Date().toISOString() })
-        .eq("id", formData.tokenId);
-
-      // Submit application
-      const { error } = await supabase.from("scholarship_submissions").insert({
-        user_id: user.id,
-        token_id: formData.tokenId,
-        category: validCategory as any,
-        applicant_status: formData.applicantStatus as any,
-        full_name: formData.fullName,
-        email: formData.email,
-        phone: formData.phone || null,
-        kartu_pelajar_url: formData.kartuPelajarUrl || null,
-        ktm_url: formData.ktmUrl || null,
-        cv_url: formData.cvUrl || null,
-        sertifikat_prestasi_url: formData.sertifikatPrestasiUrl || null,
-        transkrip_nilai_url: formData.transkripNilaiUrl || null,
-        khs_url: formData.khsUrl || null,
-        essay: formData.essay || null,
-        bukti_penghasilan_url: formData.buktiPenghasilanUrl || null,
-        bukti_listrik_url: formData.buktiListrikUrl || null,
-        surat_keterangan_yatim_url: formData.suratKeteranganYatimUrl || null,
-        sktm_url: formData.sktmUrl || null,
-        video_tiktok_url: formData.videoTiktokUrl || null,
-        berkas_pendukung_url: formData.berkasPendukungUrl || null,
-        bukti_struk_url: formData.buktiStrukUrl || null,
-      } as any);
+      // Submit application using edge function for public access
+      const { data, error } = await supabase.functions.invoke("submit-scholarship", {
+        body: {
+          sessionId,
+          tokenId: formData.tokenId,
+          category: validCategory,
+          applicantStatus: formData.applicantStatus,
+          fullName: formData.fullName,
+          email: formData.email,
+          phone: formData.phone || null,
+          kartuPelajarUrl: formData.kartuPelajarUrl || null,
+          ktmUrl: formData.ktmUrl || null,
+          cvUrl: formData.cvUrl || null,
+          sertifikatPrestasiUrl: formData.sertifikatPrestasiUrl || null,
+          transkripNilaiUrl: formData.transkripNilaiUrl || null,
+          khsUrl: formData.khsUrl || null,
+          essay: formData.essay || null,
+          buktiPenghasilanUrl: formData.buktiPenghasilanUrl || null,
+          buktiListrikUrl: formData.buktiListrikUrl || null,
+          suratKeteranganYatimUrl: formData.suratKeteranganYatimUrl || null,
+          sktmUrl: formData.sktmUrl || null,
+          videoTiktokUrl: formData.videoTiktokUrl || null,
+          berkasPendukungUrl: formData.berkasPendukungUrl || null,
+          buktiStrukUrl: formData.buktiStrukUrl || null,
+        },
+      });
 
       if (error) throw error;
+      if (!data.success) throw new Error(data.message);
 
       toast({ title: "Berhasil!", description: "Berkas beasiswa Anda telah terkirim." });
       navigate("/sukses");
@@ -193,6 +167,9 @@ const ScholarshipForm = () => {
       setIsSubmitting(false);
     }
   };
+
+  // Folder for file uploads - use session ID for anonymous users
+  const uploadFolder = `public/${sessionId}/${validCategory}`;
 
   const renderStep = () => {
     switch (currentStep) {
@@ -250,7 +227,7 @@ const ScholarshipForm = () => {
               <FileUpload
                 label="Kartu Pelajar / KTA"
                 required
-                folder={`${user?.id}/${validCategory}`}
+                folder={uploadFolder}
                 value={formData.kartuPelajarUrl}
                 onUpload={(url) => updateFormData("kartuPelajarUrl", url)}
               />
@@ -259,7 +236,7 @@ const ScholarshipForm = () => {
               <FileUpload
                 label="Kartu Tanda Mahasiswa (KTM) / Dokumen Resmi"
                 required
-                folder={`${user?.id}/${validCategory}`}
+                folder={uploadFolder}
                 value={formData.ktmUrl}
                 onUpload={(url) => updateFormData("ktmUrl", url)}
               />
@@ -268,12 +245,12 @@ const ScholarshipForm = () => {
             {/* Prestasi specific */}
             {validCategory === "prestasi" && (
               <>
-                <FileUpload label="Curriculum Vitae (CV)" required folder={`${user?.id}/${validCategory}`} value={formData.cvUrl} onUpload={(url) => updateFormData("cvUrl", url)} />
-                <FileUpload label="Sertifikat Prestasi (Akademik/Non-Akademik)" folder={`${user?.id}/${validCategory}`} value={formData.sertifikatPrestasiUrl} onUpload={(url) => updateFormData("sertifikatPrestasiUrl", url)} />
+                <FileUpload label="Curriculum Vitae (CV)" required folder={uploadFolder} value={formData.cvUrl} onUpload={(url) => updateFormData("cvUrl", url)} />
+                <FileUpload label="Sertifikat Prestasi (Akademik/Non-Akademik)" folder={uploadFolder} value={formData.sertifikatPrestasiUrl} onUpload={(url) => updateFormData("sertifikatPrestasiUrl", url)} />
                 {isMahasiswa && (
                   <>
-                    <FileUpload label="Transkrip Nilai" folder={`${user?.id}/${validCategory}`} value={formData.transkripNilaiUrl} onUpload={(url) => updateFormData("transkripNilaiUrl", url)} />
-                    <FileUpload label="Kartu Hasil Studi (KHS)" folder={`${user?.id}/${validCategory}`} value={formData.khsUrl} onUpload={(url) => updateFormData("khsUrl", url)} />
+                    <FileUpload label="Transkrip Nilai" folder={uploadFolder} value={formData.transkripNilaiUrl} onUpload={(url) => updateFormData("transkripNilaiUrl", url)} />
+                    <FileUpload label="Kartu Hasil Studi (KHS)" folder={uploadFolder} value={formData.khsUrl} onUpload={(url) => updateFormData("khsUrl", url)} />
                   </>
                 )}
               </>
@@ -288,9 +265,9 @@ const ScholarshipForm = () => {
                   <Textarea placeholder="Tuliskan esai Anda di sini..." value={formData.essay} onChange={(e) => updateFormData("essay", e.target.value)} className="min-h-[200px]" />
                   <p className="text-xs text-muted-foreground">{formData.essay.split(/\s+/).filter(Boolean).length}/500 kata</p>
                 </div>
-                <FileUpload label="Bukti Penghasilan Orang Tua / Wali" folder={`${user?.id}/${validCategory}`} value={formData.buktiPenghasilanUrl} onUpload={(url) => updateFormData("buktiPenghasilanUrl", url)} />
-                <FileUpload label="Bukti Pembayaran Listrik / Token (Bulan Terakhir)" folder={`${user?.id}/${validCategory}`} value={formData.buktiListrikUrl} onUpload={(url) => updateFormData("buktiListrikUrl", url)} />
-                <FileUpload label="Surat Keterangan Yatim / Dokumen Pendukung" required folder={`${user?.id}/${validCategory}`} value={formData.suratKeteranganYatimUrl} onUpload={(url) => updateFormData("suratKeteranganYatimUrl", url)} />
+                <FileUpload label="Bukti Penghasilan Orang Tua / Wali" folder={uploadFolder} value={formData.buktiPenghasilanUrl} onUpload={(url) => updateFormData("buktiPenghasilanUrl", url)} />
+                <FileUpload label="Bukti Pembayaran Listrik / Token (Bulan Terakhir)" folder={uploadFolder} value={formData.buktiListrikUrl} onUpload={(url) => updateFormData("buktiListrikUrl", url)} />
+                <FileUpload label="Surat Keterangan Yatim / Dokumen Pendukung" required folder={uploadFolder} value={formData.suratKeteranganYatimUrl} onUpload={(url) => updateFormData("suratKeteranganYatimUrl", url)} />
               </>
             )}
 
@@ -303,9 +280,9 @@ const ScholarshipForm = () => {
                   <Textarea placeholder="Tuliskan esai Anda di sini..." value={formData.essay} onChange={(e) => updateFormData("essay", e.target.value)} className="min-h-[200px]" />
                   <p className="text-xs text-muted-foreground">{formData.essay.split(/\s+/).filter(Boolean).length}/500 kata</p>
                 </div>
-                <FileUpload label="Bukti Penghasilan Orang Tua / Wali" folder={`${user?.id}/${validCategory}`} value={formData.buktiPenghasilanUrl} onUpload={(url) => updateFormData("buktiPenghasilanUrl", url)} />
-                <FileUpload label="Bukti Pembayaran Listrik / Token (Bulan Terakhir)" folder={`${user?.id}/${validCategory}`} value={formData.buktiListrikUrl} onUpload={(url) => updateFormData("buktiListrikUrl", url)} />
-                <FileUpload label="Surat Keterangan Tidak Mampu (SKTM)" required folder={`${user?.id}/${validCategory}`} value={formData.sktmUrl} onUpload={(url) => updateFormData("sktmUrl", url)} />
+                <FileUpload label="Bukti Penghasilan Orang Tua / Wali" folder={uploadFolder} value={formData.buktiPenghasilanUrl} onUpload={(url) => updateFormData("buktiPenghasilanUrl", url)} />
+                <FileUpload label="Bukti Pembayaran Listrik / Token (Bulan Terakhir)" folder={uploadFolder} value={formData.buktiListrikUrl} onUpload={(url) => updateFormData("buktiListrikUrl", url)} />
+                <FileUpload label="Surat Keterangan Tidak Mampu (SKTM)" required folder={uploadFolder} value={formData.sktmUrl} onUpload={(url) => updateFormData("sktmUrl", url)} />
               </>
             )}
 
@@ -323,13 +300,13 @@ const ScholarshipForm = () => {
                   <p className="text-xs text-muted-foreground">Minimal 1 menit tentang Beasiswa Pendidikan Ayo Pintar</p>
                   <Input placeholder="https://tiktok.com/@username/video/..." value={formData.videoTiktokUrl} onChange={(e) => updateFormData("videoTiktokUrl", e.target.value)} />
                 </div>
-                <FileUpload label="Sertifikat Prestasi" folder={`${user?.id}/${validCategory}`} value={formData.sertifikatPrestasiUrl} onUpload={(url) => updateFormData("sertifikatPrestasiUrl", url)} />
+                <FileUpload label="Sertifikat Prestasi" folder={uploadFolder} value={formData.sertifikatPrestasiUrl} onUpload={(url) => updateFormData("sertifikatPrestasiUrl", url)} />
               </>
             )}
 
             {/* Common fields */}
-            <FileUpload label="Berkas Pendukung Lainnya" description="Opsional" folder={`${user?.id}/${validCategory}`} value={formData.berkasPendukungUrl} onUpload={(url) => updateFormData("berkasPendukungUrl", url)} />
-            <FileUpload label="Bukti Struk Telah Memilih Berkas" required folder={`${user?.id}/${validCategory}`} value={formData.buktiStrukUrl} onUpload={(url) => updateFormData("buktiStrukUrl", url)} />
+            <FileUpload label="Berkas Pendukung Lainnya" description="Opsional" folder={uploadFolder} value={formData.berkasPendukungUrl} onUpload={(url) => updateFormData("berkasPendukungUrl", url)} />
+            <FileUpload label="Bukti Struk Telah Memilih Berkas" required folder={uploadFolder} value={formData.buktiStrukUrl} onUpload={(url) => updateFormData("buktiStrukUrl", url)} />
           </div>
         );
 
@@ -366,12 +343,6 @@ const ScholarshipForm = () => {
           </CardHeader>
           <CardContent className="space-y-8">
             <ProgressSteps steps={steps} currentStep={currentStep} />
-            
-            {!user && currentStep > 0 && (
-              <div className="bg-warning/10 border border-warning/30 rounded-lg p-4 text-center">
-                <p className="text-sm text-warning-foreground">Anda harus <a href="/auth" className="underline font-medium">login</a> untuk melanjutkan pengisian form.</p>
-              </div>
-            )}
 
             {renderStep()}
 
@@ -384,7 +355,7 @@ const ScholarshipForm = () => {
                   Lanjut <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
               ) : (
-                <Button variant="success" onClick={handleSubmit} disabled={isSubmitting || !user}>
+                <Button variant="success" onClick={handleSubmit} disabled={isSubmitting}>
                   {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <CheckCircle className="w-4 h-4 mr-2" />}
                   Kirim Berkas
                 </Button>
