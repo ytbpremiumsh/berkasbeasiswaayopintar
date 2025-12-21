@@ -11,10 +11,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { FormFieldsManager } from "@/components/admin/FormFieldsManager";
 import * as XLSX from "xlsx";
 import { 
   LayoutDashboard, FileText, Settings, LogOut, Trophy, Heart, Wallet, Globe, 
-  Eye, CheckCircle, XCircle, Clock, Plus, Loader2, ExternalLink, Key, Download
+  Eye, CheckCircle, XCircle, Clock, Plus, Loader2, ExternalLink, Key, Download, FormInput
 } from "lucide-react";
 
 type ScholarshipCategory = "prestasi" | "yatim" | "ekonomi" | "umum";
@@ -50,6 +51,9 @@ const AdminDashboard = () => {
   const [oneSenderApiKey, setOneSenderApiKey] = useState("");
   const [oneSenderPhone, setOneSenderPhone] = useState("");
   const [whatsappTemplate, setWhatsappTemplate] = useState("");
+  
+  // Mayar API settings
+  const [mayarApiKey, setMayarApiKey] = useState("");
 
   // Stats per category
   const [categoryStats, setCategoryStats] = useState<Record<ScholarshipCategory, { total: number; menunggu: number; diverifikasi: number; ditolak: number }>>({
@@ -135,10 +139,12 @@ const AdminDashboard = () => {
         const apiKey = settings.find(s => s.setting_key === "onesender_api_key");
         const phone = settings.find(s => s.setting_key === "onesender_phone");
         const template = settings.find(s => s.setting_key === "whatsapp_template");
+        const mayar = settings.find(s => s.setting_key === "mayar_api_key");
         if (apiUrl) setOneSenderApiUrl((apiUrl.setting_value as any)?.value || "");
         if (apiKey) setOneSenderApiKey((apiKey.setting_value as any)?.value || "");
         if (phone) setOneSenderPhone((phone.setting_value as any)?.value || "");
         if (template) setWhatsappTemplate((template.setting_value as any)?.value || "");
+        if (mayar) setMayarApiKey((mayar.setting_value as any)?.value || "");
       }
     } catch (error) {
       console.error("Fetch error:", error);
@@ -194,6 +200,7 @@ const AdminDashboard = () => {
         { setting_key: "onesender_api_key", setting_value: { value: oneSenderApiKey } },
         { setting_key: "onesender_phone", setting_value: { value: oneSenderPhone } },
         { setting_key: "whatsapp_template", setting_value: { value: whatsappTemplate } },
+        { setting_key: "mayar_api_key", setting_value: { value: mayarApiKey } },
       ];
 
       for (const setting of settings) {
@@ -282,6 +289,7 @@ const AdminDashboard = () => {
           <TabsList className="mb-6">
             <TabsTrigger value="submissions"><FileText className="w-4 h-4 mr-2" /> Data Pengajuan</TabsTrigger>
             <TabsTrigger value="tokens"><Key className="w-4 h-4 mr-2" /> Kode Token</TabsTrigger>
+            <TabsTrigger value="form-fields"><FormInput className="w-4 h-4 mr-2" /> Kelola Form</TabsTrigger>
             <TabsTrigger value="settings"><Settings className="w-4 h-4 mr-2" /> Pengaturan</TabsTrigger>
           </TabsList>
 
@@ -550,8 +558,29 @@ const AdminDashboard = () => {
             </Card>
           </TabsContent>
 
+          {/* Form Fields Tab */}
+          <TabsContent value="form-fields">
+            <FormFieldsManager />
+          </TabsContent>
+
           {/* Settings Tab */}
-          <TabsContent value="settings">
+          <TabsContent value="settings" className="space-y-6">
+            {/* Mayar API Settings */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Pengaturan Mayar API</CardTitle>
+                <CardDescription>Konfigurasi API Key Mayar untuk validasi token beasiswa</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">API Key Mayar</label>
+                  <Input type="password" placeholder="Masukkan API Key Mayar" value={mayarApiKey} onChange={(e) => setMayarApiKey(e.target.value)} />
+                  <p className="text-xs text-muted-foreground">API Key ini digunakan untuk memvalidasi kode token dari Mayar</p>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* OneSender Settings */}
             <Card>
               <CardHeader>
                 <CardTitle>Pengaturan OneSender (WhatsApp)</CardTitle>
@@ -575,9 +604,10 @@ const AdminDashboard = () => {
                   <p className="text-xs text-muted-foreground">Variabel: {"{{nama}}, {{kategori_beasiswa}}, {{status_pendaftar}}, {{tanggal_submit}}"}</p>
                   <Textarea placeholder="Contoh: Halo {{nama}}, pengajuan beasiswa {{kategori_beasiswa}} Anda telah diterima..." value={whatsappTemplate} onChange={(e) => setWhatsappTemplate(e.target.value)} className="min-h-[120px]" />
                 </div>
-                <Button onClick={saveSettings}>Simpan Pengaturan</Button>
               </CardContent>
             </Card>
+
+            <Button onClick={saveSettings} className="w-full sm:w-auto">Simpan Semua Pengaturan</Button>
           </TabsContent>
         </Tabs>
       </main>

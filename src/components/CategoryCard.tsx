@@ -20,15 +20,31 @@ const categoryIcons = {
 };
 
 const categoryColors = {
-  prestasi: "from-amber-500 to-orange-500",
-  yatim: "from-rose-500 to-pink-500",
-  ekonomi: "from-emerald-500 to-teal-500",
-  umum: "from-blue-500 to-indigo-500",
+  prestasi: {
+    gradient: "from-amber-500 to-orange-500",
+    button: "bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white border-0",
+    shadow: "shadow-amber-500/25",
+  },
+  yatim: {
+    gradient: "from-rose-500 to-pink-500",
+    button: "bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white border-0",
+    shadow: "shadow-rose-500/25",
+  },
+  ekonomi: {
+    gradient: "from-emerald-500 to-teal-500",
+    button: "bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white border-0",
+    shadow: "shadow-emerald-500/25",
+  },
+  umum: {
+    gradient: "from-blue-500 to-indigo-500",
+    button: "bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white border-0",
+    shadow: "shadow-indigo-500/25",
+  },
 };
 
 export function CategoryCard({ category, title, description, slug, className }: CategoryCardProps) {
   const Icon = categoryIcons[category];
-  const colorClass = categoryColors[category];
+  const colors = categoryColors[category];
 
   return (
     <Card
@@ -41,14 +57,15 @@ export function CategoryCard({ category, title, description, slug, className }: 
       <div
         className={cn(
           "absolute top-0 left-0 w-full h-1 bg-gradient-to-r",
-          colorClass
+          colors.gradient
         )}
       />
       <CardHeader>
         <div
           className={cn(
             "w-14 h-14 rounded-xl flex items-center justify-center mb-4 bg-gradient-to-br shadow-lg",
-            colorClass
+            colors.gradient,
+            colors.shadow
           )}
         >
           <Icon className="w-7 h-7 text-white" />
@@ -59,7 +76,14 @@ export function CategoryCard({ category, title, description, slug, className }: 
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <Button asChild variant="outline" className="w-full group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+        <Button 
+          asChild 
+          className={cn(
+            "w-full shadow-lg transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5",
+            colors.button,
+            colors.shadow
+          )}
+        >
           <Link to={`/beasiswa/${slug}`}>
             Daftar Sekarang
             <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />

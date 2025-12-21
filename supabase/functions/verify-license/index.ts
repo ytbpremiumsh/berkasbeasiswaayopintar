@@ -25,11 +25,24 @@ serve(async (req) => {
       );
     }
 
-    const MAYAR_API_KEY = Deno.env.get("MAYAR_API_KEY");
+    // Get Supabase client to read API key from admin_settings
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Try to get Mayar API key from admin_settings first
+    const { data: mayarSetting } = await supabase
+      .from("admin_settings")
+      .select("setting_value")
+      .eq("setting_key", "mayar_api_key")
+      .maybeSingle();
+
+    const MAYAR_API_KEY = (mayarSetting?.setting_value as any)?.value || Deno.env.get("MAYAR_API_KEY");
+    
     if (!MAYAR_API_KEY) {
       console.error("MAYAR_API_KEY is not configured");
       return new Response(
-        JSON.stringify({ error: "Server configuration error" }),
+        JSON.stringify({ error: "Server configuration error: API Key belum dikonfigurasi" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -107,9 +120,7 @@ serve(async (req) => {
     }
 
     // License is valid, now sync to database
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    // (Supabase client already created above)
 
     // Check if token exists in our database, if not create it
     const { data: existingToken, error: fetchError } = await supabase
