@@ -87,11 +87,7 @@ export function Navbar() {
                   Keluar
                 </Button>
               </>
-            ) : (
-              <Button asChild size="sm">
-                <Link to="/auth">Masuk / Daftar</Link>
-              </Button>
-            )}
+            ) : null}
           </div>
 
           {/* Mobile Menu Button */}
@@ -127,7 +123,7 @@ export function Navbar() {
             >
               Kategori
             </Link>
-            {user ? (
+            {user && (
               <>
                 {isAdmin && (
                   <Link
@@ -143,14 +139,6 @@ export function Navbar() {
                   Keluar
                 </Button>
               </>
-            ) : (
-              <Link
-                to="/auth"
-                className="px-4 py-2 text-sm font-medium bg-primary text-primary-foreground rounded-lg text-center"
-                onClick={() => setIsOpen(false)}
-              >
-                Masuk / Daftar
-              </Link>
             )}
           </div>
         </div>
