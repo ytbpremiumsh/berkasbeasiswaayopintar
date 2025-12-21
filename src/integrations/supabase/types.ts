@@ -59,6 +59,48 @@ export type Database = {
         }
         Relationships: []
       }
+      form_fields: {
+        Row: {
+          category: string
+          created_at: string
+          description: string | null
+          display_order: number
+          field_label: string
+          field_name: string
+          field_type: string
+          id: string
+          is_active: boolean
+          is_required: boolean
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          field_label: string
+          field_name: string
+          field_type?: string
+          id?: string
+          is_active?: boolean
+          is_required?: boolean
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          field_label?: string
+          field_name?: string
+          field_type?: string
+          id?: string
+          is_active?: boolean
+          is_required?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
