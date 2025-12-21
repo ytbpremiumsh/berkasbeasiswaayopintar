@@ -11,9 +11,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import * as XLSX from "xlsx";
 import { 
-  LayoutDashboard, FileText, Users, Settings, LogOut, Trophy, Heart, Wallet, Globe, 
-  Eye, CheckCircle, XCircle, Clock, Plus, Loader2, ExternalLink, Key
+  LayoutDashboard, FileText, Settings, LogOut, Trophy, Heart, Wallet, Globe, 
+  Eye, CheckCircle, XCircle, Clock, Plus, Loader2, ExternalLink, Key, Download
 } from "lucide-react";
 
 type ScholarshipCategory = "prestasi" | "yatim" | "ekonomi" | "umum";
@@ -38,21 +39,24 @@ const AdminDashboard = () => {
   const [submissions, setSubmissions] = useState<any[]>([]);
   const [tokens, setTokens] = useState<any[]>([]);
   const [selectedSubmission, setSelectedSubmission] = useState<any>(null);
-  const [filterCategory, setFilterCategory] = useState<string>("all");
+  const [selectedCategory, setSelectedCategory] = useState<ScholarshipCategory>("prestasi");
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [newTokenCode, setNewTokenCode] = useState("");
   const [newTokenCategory, setNewTokenCategory] = useState<ScholarshipCategory>("prestasi");
   const [isAddingToken, setIsAddingToken] = useState(false);
+  
+  // OneSender settings
+  const [oneSenderApiUrl, setOneSenderApiUrl] = useState("");
   const [oneSenderApiKey, setOneSenderApiKey] = useState("");
   const [oneSenderPhone, setOneSenderPhone] = useState("");
   const [whatsappTemplate, setWhatsappTemplate] = useState("");
 
-  // Stats
-  const [stats, setStats] = useState({
-    total: 0,
-    menunggu: 0,
-    diverifikasi: 0,
-    ditolak: 0,
+  // Stats per category
+  const [categoryStats, setCategoryStats] = useState<Record<ScholarshipCategory, { total: number; menunggu: number; diverifikasi: number; ditolak: number }>>({
+    prestasi: { total: 0, menunggu: 0, diverifikasi: 0, ditolak: 0 },
+    yatim: { total: 0, menunggu: 0, diverifikasi: 0, ditolak: 0 },
+    ekonomi: { total: 0, menunggu: 0, diverifikasi: 0, ditolak: 0 },
+    umum: { total: 0, menunggu: 0, diverifikasi: 0, ditolak: 0 },
   });
 
   useEffect(() => {
@@ -92,12 +96,25 @@ const AdminDashboard = () => {
       if (subsError) throw subsError;
       setSubmissions(subs || []);
 
-      // Calculate stats
-      const total = subs?.length || 0;
-      const menunggu = subs?.filter(s => s.status === "menunggu").length || 0;
-      const diverifikasi = subs?.filter(s => s.status === "diverifikasi").length || 0;
-      const ditolak = subs?.filter(s => s.status === "ditolak").length || 0;
-      setStats({ total, menunggu, diverifikasi, ditolak });
+      // Calculate stats per category
+      const stats: Record<ScholarshipCategory, { total: number; menunggu: number; diverifikasi: number; ditolak: number }> = {
+        prestasi: { total: 0, menunggu: 0, diverifikasi: 0, ditolak: 0 },
+        yatim: { total: 0, menunggu: 0, diverifikasi: 0, ditolak: 0 },
+        ekonomi: { total: 0, menunggu: 0, diverifikasi: 0, ditolak: 0 },
+        umum: { total: 0, menunggu: 0, diverifikasi: 0, ditolak: 0 },
+      };
+
+      subs?.forEach(s => {
+        const cat = s.category as ScholarshipCategory;
+        if (stats[cat]) {
+          stats[cat].total++;
+          if (s.status === "menunggu") stats[cat].menunggu++;
+          if (s.status === "diverifikasi") stats[cat].diverifikasi++;
+          if (s.status === "ditolak") stats[cat].ditolak++;
+        }
+      });
+
+      setCategoryStats(stats);
 
       // Fetch tokens
       const { data: toks, error: toksError } = await supabase
@@ -114,9 +131,11 @@ const AdminDashboard = () => {
         .select("*");
 
       if (settings) {
+        const apiUrl = settings.find(s => s.setting_key === "onesender_api_url");
         const apiKey = settings.find(s => s.setting_key === "onesender_api_key");
         const phone = settings.find(s => s.setting_key === "onesender_phone");
         const template = settings.find(s => s.setting_key === "whatsapp_template");
+        if (apiUrl) setOneSenderApiUrl((apiUrl.setting_value as any)?.value || "");
         if (apiKey) setOneSenderApiKey((apiKey.setting_value as any)?.value || "");
         if (phone) setOneSenderPhone((phone.setting_value as any)?.value || "");
         if (template) setWhatsappTemplate((template.setting_value as any)?.value || "");
@@ -171,6 +190,7 @@ const AdminDashboard = () => {
   const saveSettings = async () => {
     try {
       const settings = [
+        { setting_key: "onesender_api_url", setting_value: { value: oneSenderApiUrl } },
         { setting_key: "onesender_api_key", setting_value: { value: oneSenderApiKey } },
         { setting_key: "onesender_phone", setting_value: { value: oneSenderPhone } },
         { setting_key: "whatsapp_template", setting_value: { value: whatsappTemplate } },
@@ -186,11 +206,47 @@ const AdminDashboard = () => {
     }
   };
 
+  const exportToExcel = (category: ScholarshipCategory) => {
+    const categoryData = submissions.filter(s => s.category === category);
+    
+    const exportData = categoryData.map(sub => ({
+      "Nama Lengkap": sub.full_name,
+      "Email": sub.email,
+      "Telepon": sub.phone || "-",
+      "Status Pendaftar": sub.applicant_status?.replace("_", " ") || "-",
+      "Status": statusLabels[sub.status as SubmissionStatus]?.label || sub.status,
+      "Tanggal Submit": new Date(sub.submitted_at).toLocaleDateString("id-ID"),
+      "Kartu Pelajar": sub.kartu_pelajar_url || "-",
+      "KTM": sub.ktm_url || "-",
+      "CV": sub.cv_url || "-",
+      "Sertifikat Prestasi": sub.sertifikat_prestasi_url || "-",
+      "Transkrip Nilai": sub.transkrip_nilai_url || "-",
+      "KHS": sub.khs_url || "-",
+      "Esai": sub.essay || "-",
+      "Bukti Penghasilan": sub.bukti_penghasilan_url || "-",
+      "Bukti Listrik": sub.bukti_listrik_url || "-",
+      "Surat Keterangan Yatim": sub.surat_keterangan_yatim_url || "-",
+      "SKTM": sub.sktm_url || "-",
+      "Video TikTok": sub.video_tiktok_url || "-",
+      "Berkas Pendukung": sub.berkas_pendukung_url || "-",
+      "Bukti Struk": sub.bukti_struk_url || "-",
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(exportData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, `Beasiswa ${categoryLabels[category].label}`);
+    XLSX.writeFile(wb, `beasiswa_${category}_${new Date().toISOString().split("T")[0]}.xlsx`);
+    
+    toast({ title: "Export berhasil", description: `Data ${categoryLabels[category].label} telah diexport` });
+  };
+
   const filteredSubmissions = submissions.filter(s => {
-    if (filterCategory !== "all" && s.category !== filterCategory) return false;
+    if (s.category !== selectedCategory) return false;
     if (filterStatus !== "all" && s.status !== filterStatus) return false;
     return true;
   });
+
+  const currentStats = categoryStats[selectedCategory];
 
   if (isLoading) {
     return (
@@ -221,63 +277,7 @@ const AdminDashboard = () => {
       </header>
 
       <main className="container mx-auto px-4 py-8">
-        {/* Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                  <FileText className="w-5 h-5 text-primary" />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold">{stats.total}</p>
-                  <p className="text-xs text-muted-foreground">Total Pengajuan</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-warning/10 flex items-center justify-center">
-                  <Clock className="w-5 h-5 text-warning" />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold">{stats.menunggu}</p>
-                  <p className="text-xs text-muted-foreground">Menunggu</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-success/10 flex items-center justify-center">
-                  <CheckCircle className="w-5 h-5 text-success" />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold">{stats.diverifikasi}</p>
-                  <p className="text-xs text-muted-foreground">Diverifikasi</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-destructive/10 flex items-center justify-center">
-                  <XCircle className="w-5 h-5 text-destructive" />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold">{stats.ditolak}</p>
-                  <p className="text-xs text-muted-foreground">Ditolak</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Tabs */}
+        {/* Main Tabs */}
         <Tabs defaultValue="submissions">
           <TabsList className="mb-6">
             <TabsTrigger value="submissions"><FileText className="w-4 h-4 mr-2" /> Data Pengajuan</TabsTrigger>
@@ -287,24 +287,85 @@ const AdminDashboard = () => {
 
           {/* Submissions Tab */}
           <TabsContent value="submissions">
+            {/* Category Tabs */}
+            <Tabs value={selectedCategory} onValueChange={(v) => setSelectedCategory(v as ScholarshipCategory)} className="mb-6">
+              <TabsList className="grid grid-cols-4 w-full max-w-lg">
+                {(Object.keys(categoryLabels) as ScholarshipCategory[]).map((cat) => {
+                  const { label, icon: Icon } = categoryLabels[cat];
+                  return (
+                    <TabsTrigger key={cat} value={cat} className="gap-2">
+                      <Icon className="w-4 h-4" />
+                      <span className="hidden sm:inline">{label}</span>
+                    </TabsTrigger>
+                  );
+                })}
+              </TabsList>
+            </Tabs>
+
+            {/* Stats for selected category */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                      <FileText className="w-5 h-5 text-primary" />
+                    </div>
+                    <div>
+                      <p className="text-2xl font-bold">{currentStats.total}</p>
+                      <p className="text-xs text-muted-foreground">Total</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-warning/10 flex items-center justify-center">
+                      <Clock className="w-5 h-5 text-warning" />
+                    </div>
+                    <div>
+                      <p className="text-2xl font-bold">{currentStats.menunggu}</p>
+                      <p className="text-xs text-muted-foreground">Menunggu</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-success/10 flex items-center justify-center">
+                      <CheckCircle className="w-5 h-5 text-success" />
+                    </div>
+                    <div>
+                      <p className="text-2xl font-bold">{currentStats.diverifikasi}</p>
+                      <p className="text-xs text-muted-foreground">Diverifikasi</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-destructive/10 flex items-center justify-center">
+                      <XCircle className="w-5 h-5 text-destructive" />
+                    </div>
+                    <div>
+                      <p className="text-2xl font-bold">{currentStats.ditolak}</p>
+                      <p className="text-xs text-muted-foreground">Ditolak</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
             <Card>
               <CardHeader>
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   <div>
-                    <CardTitle>Data Pengajuan Beasiswa</CardTitle>
-                    <CardDescription>Kelola pengajuan beasiswa yang masuk</CardDescription>
+                    <CardTitle>Data Pengajuan - {categoryLabels[selectedCategory].label}</CardTitle>
+                    <CardDescription>Kelola pengajuan beasiswa {categoryLabels[selectedCategory].label}</CardDescription>
                   </div>
                   <div className="flex gap-2">
-                    <Select value={filterCategory} onValueChange={setFilterCategory}>
-                      <SelectTrigger className="w-[140px]"><SelectValue placeholder="Kategori" /></SelectTrigger>
-                      <SelectContent className="bg-card border">
-                        <SelectItem value="all">Semua Kategori</SelectItem>
-                        <SelectItem value="prestasi">Prestasi</SelectItem>
-                        <SelectItem value="yatim">Yatim</SelectItem>
-                        <SelectItem value="ekonomi">Ekonomi</SelectItem>
-                        <SelectItem value="umum">Umum</SelectItem>
-                      </SelectContent>
-                    </Select>
                     <Select value={filterStatus} onValueChange={setFilterStatus}>
                       <SelectTrigger className="w-[140px]"><SelectValue placeholder="Status" /></SelectTrigger>
                       <SelectContent className="bg-card border">
@@ -314,6 +375,9 @@ const AdminDashboard = () => {
                         <SelectItem value="ditolak">Ditolak</SelectItem>
                       </SelectContent>
                     </Select>
+                    <Button variant="outline" onClick={() => exportToExcel(selectedCategory)}>
+                      <Download className="w-4 h-4 mr-2" /> Export Excel
+                    </Button>
                   </div>
                 </div>
               </CardHeader>
@@ -323,7 +387,6 @@ const AdminDashboard = () => {
                     <TableHeader>
                       <TableRow>
                         <TableHead>Nama</TableHead>
-                        <TableHead>Kategori</TableHead>
                         <TableHead>Status Pendaftar</TableHead>
                         <TableHead>Status</TableHead>
                         <TableHead>Tanggal</TableHead>
@@ -332,7 +395,6 @@ const AdminDashboard = () => {
                     </TableHeader>
                     <TableBody>
                       {filteredSubmissions.map((sub) => {
-                        const cat = categoryLabels[sub.category as ScholarshipCategory];
                         const stat = statusLabels[sub.status as SubmissionStatus];
                         return (
                           <TableRow key={sub.id}>
@@ -341,11 +403,6 @@ const AdminDashboard = () => {
                                 <p className="font-medium">{sub.full_name}</p>
                                 <p className="text-xs text-muted-foreground">{sub.email}</p>
                               </div>
-                            </TableCell>
-                            <TableCell>
-                              <Badge variant="outline" className="gap-1">
-                                <cat.icon className="w-3 h-3" /> {cat.label}
-                              </Badge>
                             </TableCell>
                             <TableCell className="capitalize">{sub.applicant_status?.replace("_", " ")}</TableCell>
                             <TableCell>
@@ -423,7 +480,7 @@ const AdminDashboard = () => {
                       })}
                       {filteredSubmissions.length === 0 && (
                         <TableRow>
-                          <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                          <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
                             Tidak ada data pengajuan
                           </TableCell>
                         </TableRow>
@@ -501,6 +558,10 @@ const AdminDashboard = () => {
                 <CardDescription>Konfigurasi integrasi WhatsApp untuk notifikasi otomatis</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">API URL OneSender</label>
+                  <Input placeholder="https://api.onesender.com/v1/send" value={oneSenderApiUrl} onChange={(e) => setOneSenderApiUrl(e.target.value)} />
+                </div>
                 <div className="space-y-2">
                   <label className="text-sm font-medium">API Key OneSender</label>
                   <Input type="password" placeholder="Masukkan API Key" value={oneSenderApiKey} onChange={(e) => setOneSenderApiKey(e.target.value)} />
