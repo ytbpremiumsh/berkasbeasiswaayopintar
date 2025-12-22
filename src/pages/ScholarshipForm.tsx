@@ -37,6 +37,7 @@ interface FormData {
   videoTiktokUrl: string;
   berkasPendukungUrl: string;
   buktiStrukUrl: string;
+  isTokenValidated: boolean;
 }
 
 const categoryInfo = {
@@ -73,6 +74,7 @@ const ScholarshipForm = () => {
     videoTiktokUrl: "",
     berkasPendukungUrl: "",
     buktiStrukUrl: "",
+    isTokenValidated: false,
   });
 
   const validCategory = category as ScholarshipCategory;
@@ -179,9 +181,13 @@ const ScholarshipForm = () => {
             <TokenValidator
               category={validCategory}
               onValidToken={(id, customerName, customerEmail) => {
-                updateFormData("tokenId", id);
-                if (customerName) updateFormData("fullName", customerName);
-                if (customerEmail) updateFormData("email", customerEmail);
+                setFormData(prev => ({
+                  ...prev,
+                  tokenId: id,
+                  fullName: customerName || prev.fullName,
+                  email: customerEmail || prev.email,
+                  isTokenValidated: true,
+                }));
               }}
               value={formData.tokenId ? "VALIDATED" : ""}
             />
@@ -206,11 +212,30 @@ const ScholarshipForm = () => {
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium">Nama Lengkap <span className="text-destructive">*</span></label>
-              <Input placeholder="Masukkan nama lengkap" value={formData.fullName} onChange={(e) => updateFormData("fullName", e.target.value)} />
+              <Input 
+                placeholder="Masukkan nama lengkap" 
+                value={formData.fullName} 
+                onChange={(e) => updateFormData("fullName", e.target.value)} 
+                readOnly={formData.isTokenValidated && !!formData.fullName}
+                className={formData.isTokenValidated && formData.fullName ? "bg-muted cursor-not-allowed" : ""}
+              />
+              {formData.isTokenValidated && formData.fullName && (
+                <p className="text-xs text-muted-foreground">Nama diambil dari data pembelian token</p>
+              )}
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium">Email <span className="text-destructive">*</span></label>
-              <Input type="email" placeholder="email@contoh.com" value={formData.email} onChange={(e) => updateFormData("email", e.target.value)} />
+              <Input 
+                type="email" 
+                placeholder="email@contoh.com" 
+                value={formData.email} 
+                onChange={(e) => updateFormData("email", e.target.value)} 
+                readOnly={formData.isTokenValidated && !!formData.email}
+                className={formData.isTokenValidated && formData.email ? "bg-muted cursor-not-allowed" : ""}
+              />
+              {formData.isTokenValidated && formData.email && (
+                <p className="text-xs text-muted-foreground">Email diambil dari data pembelian token</p>
+              )}
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium">Nomor Telepon</label>
