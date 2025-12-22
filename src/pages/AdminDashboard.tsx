@@ -13,6 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { AdminSidebar } from "@/components/admin/AdminSidebar";
 import { AnalyticsDashboard } from "@/components/admin/AnalyticsDashboard";
 import { FormFieldsManager } from "@/components/admin/FormFieldsManager";
+import { SuccessTemplatesManager } from "@/components/admin/SuccessTemplatesManager";
 import * as XLSX from "xlsx";
 import { cn } from "@/lib/utils";
 import { 
@@ -618,6 +619,9 @@ const AdminDashboard = () => {
 
           {/* Form Fields */}
           {activeTab === "form-fields" && <FormFieldsManager />}
+
+          {/* Success Templates */}
+          {activeTab === "success-templates" && <SuccessTemplatesManager />}
 
           {/* Settings */}
           {activeTab === "settings" && (

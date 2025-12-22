@@ -24,6 +24,7 @@ const App = () => (
           <Route path="/auth" element={<Auth />} />
           <Route path="/beasiswa/:category" element={<ScholarshipForm />} />
           <Route path="/sukses" element={<SuccessPage />} />
+          <Route path="/sukses/:category" element={<SuccessPage />} />
           <Route path="/admin/login" element={<AdminLogin />} />
           <Route path="/admin" element={<AdminDashboard />} />
           <Route path="*" element={<NotFound />} />

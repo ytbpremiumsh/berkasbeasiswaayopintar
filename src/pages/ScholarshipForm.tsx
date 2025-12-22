@@ -1,7 +1,5 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Navbar } from "@/components/Navbar";
-import { Footer } from "@/components/Footer";
 import { ProgressSteps } from "@/components/ProgressSteps";
 import { TokenValidator } from "@/components/TokenValidator";
 import { FileUpload } from "@/components/FileUpload";
@@ -161,7 +159,7 @@ const ScholarshipForm = () => {
       if (!data.success) throw new Error(data.message);
 
       toast({ title: "Berhasil!", description: "Berkas beasiswa Anda telah terkirim." });
-      navigate("/sukses");
+      navigate(`/sukses/${validCategory}`);
     } catch (error: any) {
       console.error("Submit error:", error);
       toast({ title: "Gagal mengirim", description: error.message, variant: "destructive" });
@@ -356,7 +354,6 @@ const ScholarshipForm = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
-      <Navbar />
       <main className="flex-1 container mx-auto px-4 py-8">
         <Card variant="elevated" className="max-w-2xl mx-auto">
           <CardHeader className="text-center">
@@ -389,7 +386,6 @@ const ScholarshipForm = () => {
           </CardContent>
         </Card>
       </main>
-      <Footer />
     </div>
   );
 };
