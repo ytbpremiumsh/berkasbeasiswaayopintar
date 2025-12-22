@@ -4,6 +4,7 @@ import { Button } from "./ui/button";
 import { Loader2, CheckCircle, XCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { DocumentRequirements } from "./DocumentRequirements";
 
 interface TokenValidatorProps {
   category: "prestasi" | "yatim" | "ekonomi" | "umum";
@@ -73,76 +74,8 @@ export function TokenValidator({ category, onValidToken, value }: TokenValidator
 
   return (
     <div className="space-y-6">
-      {/* Document Preparation Notes */}
-      <div className="bg-muted/50 border border-border rounded-lg p-4 space-y-3">
-        <h4 className="font-semibold text-foreground flex items-center gap-2">
-          <svg className="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-          </svg>
-          Berkas yang Harus Disiapkan
-        </h4>
-        <p className="text-sm text-muted-foreground">
-          Sebelum melanjutkan, pastikan Anda telah menyiapkan berkas-berkas berikut dalam format <strong>PDF/JPG/PNG</strong> (maks. 5MB):
-        </p>
-        <ul className="text-sm text-muted-foreground space-y-1.5 ml-4">
-          <li className="flex items-start gap-2">
-            <span className="text-primary mt-0.5">•</span>
-            <span><strong>Kartu Identitas</strong> - Kartu Pelajar (untuk Pelajar/Gap Year) atau KTM (untuk Mahasiswa)</span>
-          </li>
-          <li className="flex items-start gap-2">
-            <span className="text-primary mt-0.5">•</span>
-            <span><strong>Bukti Struk/Pembayaran</strong> - Bukti telah memilih berkas beasiswa (wajib)</span>
-          </li>
-          {category === "prestasi" && (
-            <>
-              <li className="flex items-start gap-2">
-                <span className="text-amber-500 mt-0.5">•</span>
-                <span><strong>CV</strong> - Curriculum Vitae terbaru</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-amber-500 mt-0.5">•</span>
-                <span><strong>Sertifikat Prestasi</strong> - Akademik atau Non-Akademik (opsional)</span>
-              </li>
-            </>
-          )}
-          {category === "yatim" && (
-            <>
-              <li className="flex items-start gap-2">
-                <span className="text-rose-500 mt-0.5">•</span>
-                <span><strong>Surat Keterangan Yatim</strong> - Dari kelurahan/RT/RW</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-rose-500 mt-0.5">•</span>
-                <span><strong>Esai Pribadi</strong> - Maksimal 500 kata</span>
-              </li>
-            </>
-          )}
-          {category === "ekonomi" && (
-            <>
-              <li className="flex items-start gap-2">
-                <span className="text-emerald-500 mt-0.5">•</span>
-                <span><strong>SKTM</strong> - Surat Keterangan Tidak Mampu</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-emerald-500 mt-0.5">•</span>
-                <span><strong>Esai Pribadi</strong> - Maksimal 500 kata</span>
-              </li>
-            </>
-          )}
-          {category === "umum" && (
-            <>
-              <li className="flex items-start gap-2">
-                <span className="text-blue-500 mt-0.5">•</span>
-                <span><strong>Esai Pribadi</strong> - 500-1000 kata</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-blue-500 mt-0.5">•</span>
-                <span><strong>Video TikTok</strong> - Minimal 1 menit tentang Beasiswa Ayo Pintar (opsional)</span>
-              </li>
-            </>
-          )}
-        </ul>
-      </div>
+      {/* Document Preparation Notes - Now with clear separation by applicant type */}
+      <DocumentRequirements category={category} />
 
       {/* Token Input Section */}
       <div className="space-y-4">

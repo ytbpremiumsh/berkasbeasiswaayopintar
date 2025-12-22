@@ -253,6 +253,45 @@ export type Database = {
         }
         Relationships: []
       }
+      success_templates: {
+        Row: {
+          button_link: string
+          button_text: string
+          category: string
+          created_at: string
+          description: string
+          id: string
+          is_active: boolean
+          note: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          button_link?: string
+          button_text?: string
+          category: string
+          created_at?: string
+          description?: string
+          id?: string
+          is_active?: boolean
+          note?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Update: {
+          button_link?: string
+          button_text?: string
+          category?: string
+          created_at?: string
+          description?: string
+          id?: string
+          is_active?: boolean
+          note?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
