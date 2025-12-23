@@ -103,7 +103,7 @@ const ScholarshipForm = () => {
       case 1:
         return !!formData.fullName && !!formData.email && !!formData.applicantStatus;
       case 2:
-        return !!formData.buktiStrukUrl && validateRequiredFiles();
+        return validateRequiredFiles();
       default:
         return true;
     }
@@ -329,7 +329,6 @@ const ScholarshipForm = () => {
 
             {/* Common fields */}
             <FileUpload label="Berkas Pendukung Lainnya" description="Opsional" folder={uploadFolder} value={formData.berkasPendukungUrl} onUpload={(url) => updateFormData("berkasPendukungUrl", url)} />
-            <FileUpload label="Bukti Struk Telah Memilih Berkas" required folder={uploadFolder} value={formData.buktiStrukUrl} onUpload={(url) => updateFormData("buktiStrukUrl", url)} />
           </div>
         );
 
