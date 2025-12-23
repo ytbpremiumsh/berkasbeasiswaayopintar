@@ -368,7 +368,10 @@ const ScholarshipForm = () => {
             {renderStep()}
 
             <div className="flex justify-between pt-4">
-              <Button variant="outline" onClick={() => setCurrentStep(s => s - 1)} disabled={currentStep === 0}>
+              <Button 
+                variant="outline" 
+                onClick={() => currentStep === 0 ? navigate("/") : setCurrentStep(s => s - 1)}
+              >
                 <ArrowLeft className="w-4 h-4 mr-2" /> Kembali
               </Button>
               {currentStep < steps.length - 1 ? (
