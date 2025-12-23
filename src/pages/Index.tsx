@@ -1,5 +1,3 @@
-import { Navbar } from "@/components/Navbar";
-import { Footer } from "@/components/Footer";
 import { CategoryCard } from "@/components/CategoryCard";
 
 const Index = () => {
@@ -12,7 +10,6 @@ const Index = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
-      <Navbar />
       <main className="flex-1 container mx-auto px-4 py-12">
         <div className="text-center mb-10">
           <h1 className="text-3xl font-bold text-foreground mb-2">Pilih Kategori Beasiswa</h1>
@@ -24,7 +21,6 @@ const Index = () => {
           ))}
         </div>
       </main>
-      <Footer />
     </div>
   );
 };
