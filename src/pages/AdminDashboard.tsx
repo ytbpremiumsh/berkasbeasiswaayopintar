@@ -14,6 +14,8 @@ import { AdminSidebar } from "@/components/admin/AdminSidebar";
 import { AnalyticsDashboard } from "@/components/admin/AnalyticsDashboard";
 import { FormFieldsManager } from "@/components/admin/FormFieldsManager";
 import { SuccessTemplatesManager } from "@/components/admin/SuccessTemplatesManager";
+import { DuplicateSubmissions } from "@/components/admin/DuplicateSubmissions";
+import { VerifiedSubmissions } from "@/components/admin/VerifiedSubmissions";
 import * as XLSX from "xlsx";
 import { cn } from "@/lib/utils";
 import { 
@@ -622,6 +624,12 @@ const AdminDashboard = () => {
 
           {/* Success Templates */}
           {activeTab === "success-templates" && <SuccessTemplatesManager />}
+
+          {/* Duplicate Submissions */}
+          {activeTab === "duplicates" && <DuplicateSubmissions />}
+
+          {/* Verified Submissions */}
+          {activeTab === "verified" && <VerifiedSubmissions />}
 
           {/* Settings */}
           {activeTab === "settings" && (
