@@ -1,7 +1,7 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { 
   Trophy, Heart, Wallet, Globe, FileText, CheckCircle, XCircle, Clock,
-  TrendingUp, Users, Calendar
+  TrendingUp, Users, Calendar, ArrowUpRight
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -57,192 +57,153 @@ export function AnalyticsDashboard({ categoryStats, totalTokens, usedTokens, rec
   const totalMenunggu = Object.values(categoryStats).reduce((sum, s) => sum + s.menunggu, 0);
   const totalDiverifikasi = Object.values(categoryStats).reduce((sum, s) => sum + s.diverifikasi, 0);
   const totalDitolak = Object.values(categoryStats).reduce((sum, s) => sum + s.ditolak, 0);
+  
+  const verificationRate = totalAll > 0 ? Math.round((totalDiverifikasi / totalAll) * 100) : 0;
+  const tokenUsageRate = totalTokens > 0 ? Math.round((usedTokens / totalTokens) * 100) : 0;
 
   return (
     <div className="space-y-6">
-      {/* Welcome Header */}
+      {/* Compact Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Dashboard Analitik</h1>
-          <p className="text-muted-foreground">Pantau statistik pengajuan beasiswa secara real-time</p>
-        </div>
-        <div className="text-right">
-          <p className="text-sm text-muted-foreground">Terakhir diperbarui</p>
-          <p className="text-sm font-medium">{new Date().toLocaleDateString("id-ID", { 
-            weekday: "long", 
-            year: "numeric", 
-            month: "long", 
-            day: "numeric" 
+          <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
+          <p className="text-sm text-muted-foreground">{new Date().toLocaleDateString("id-ID", { 
+            weekday: "long", day: "numeric", month: "long", year: "numeric" 
           })}</p>
         </div>
       </div>
 
-      {/* Overview Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="border-l-4 border-l-primary">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
+      {/* Main Stats Card - Compact Infographic Style */}
+      <Card className="overflow-hidden">
+        <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent p-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+            {/* Total Submissions */}
+            <div className="col-span-2 flex items-center gap-4 p-4 bg-card rounded-xl shadow-sm">
+              <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center">
+                <FileText className="w-7 h-7 text-primary" />
+              </div>
               <div>
+                <p className="text-4xl font-bold">{totalAll}</p>
                 <p className="text-sm text-muted-foreground">Total Pengajuan</p>
-                <p className="text-3xl font-bold text-foreground">{totalAll}</p>
-              </div>
-              <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-                <FileText className="w-6 h-6 text-primary" />
               </div>
             </div>
-          </CardContent>
-        </Card>
 
-        <Card className="border-l-4 border-l-warning">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Menunggu Review</p>
-                <p className="text-3xl font-bold text-warning">{totalMenunggu}</p>
+            {/* Quick Stats Row */}
+            <div className="flex flex-col justify-center p-3 bg-warning/5 rounded-xl border border-warning/20">
+              <div className="flex items-center gap-2">
+                <Clock className="w-4 h-4 text-warning" />
+                <span className="text-2xl font-bold text-warning">{totalMenunggu}</span>
               </div>
-              <div className="w-12 h-12 rounded-full bg-warning/10 flex items-center justify-center">
-                <Clock className="w-6 h-6 text-warning" />
-              </div>
+              <p className="text-xs text-muted-foreground">Menunggu</p>
             </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-l-4 border-l-success">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Diverifikasi</p>
-                <p className="text-3xl font-bold text-success">{totalDiverifikasi}</p>
+            
+            <div className="flex flex-col justify-center p-3 bg-success/5 rounded-xl border border-success/20">
+              <div className="flex items-center gap-2">
+                <CheckCircle className="w-4 h-4 text-success" />
+                <span className="text-2xl font-bold text-success">{totalDiverifikasi}</span>
               </div>
-              <div className="w-12 h-12 rounded-full bg-success/10 flex items-center justify-center">
-                <CheckCircle className="w-6 h-6 text-success" />
-              </div>
+              <p className="text-xs text-muted-foreground">Verified</p>
             </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-l-4 border-l-destructive">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Ditolak</p>
-                <p className="text-3xl font-bold text-destructive">{totalDitolak}</p>
+            
+            <div className="flex flex-col justify-center p-3 bg-destructive/5 rounded-xl border border-destructive/20">
+              <div className="flex items-center gap-2">
+                <XCircle className="w-4 h-4 text-destructive" />
+                <span className="text-2xl font-bold text-destructive">{totalDitolak}</span>
               </div>
-              <div className="w-12 h-12 rounded-full bg-destructive/10 flex items-center justify-center">
-                <XCircle className="w-6 h-6 text-destructive" />
-              </div>
+              <p className="text-xs text-muted-foreground">Ditolak</p>
             </div>
-          </CardContent>
-        </Card>
-      </div>
 
-      {/* Category Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {(Object.keys(categoryConfig) as ScholarshipCategory[]).map((cat) => {
-          const config = categoryConfig[cat];
-          const stats = categoryStats[cat];
-          const Icon = config.icon;
-          const completionRate = stats.total > 0 
-            ? Math.round((stats.diverifikasi / stats.total) * 100) 
-            : 0;
+            <div className="flex flex-col justify-center p-3 bg-muted/50 rounded-xl">
+              <div className="flex items-center gap-2">
+                <ArrowUpRight className="w-4 h-4 text-primary" />
+                <span className="text-2xl font-bold">{verificationRate}%</span>
+              </div>
+              <p className="text-xs text-muted-foreground">Verifikasi</p>
+            </div>
+          </div>
+        </div>
 
-          return (
-            <Card key={cat} className="overflow-hidden group hover:shadow-lg transition-all duration-300">
-              <div className={cn("h-2 bg-gradient-to-r", config.gradient)} />
-              <CardHeader className="pb-2">
-                <div className="flex items-center justify-between">
-                  <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center bg-gradient-to-br shadow-lg", config.gradient)}>
-                    <Icon className="w-6 h-6 text-white" />
+        {/* Category Mini Cards */}
+        <div className="p-4 border-t bg-muted/20">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {(Object.keys(categoryConfig) as ScholarshipCategory[]).map((cat) => {
+              const config = categoryConfig[cat];
+              const stats = categoryStats[cat];
+              const Icon = config.icon;
+              const rate = stats.total > 0 ? Math.round((stats.diverifikasi / stats.total) * 100) : 0;
+
+              return (
+                <div key={cat} className="group relative p-4 bg-card rounded-xl hover:shadow-md transition-all duration-200 cursor-default">
+                  <div className="flex items-start justify-between mb-3">
+                    <div className={cn("w-10 h-10 rounded-lg flex items-center justify-center bg-gradient-to-br shadow-sm", config.gradient)}>
+                      <Icon className="w-5 h-5 text-white" />
+                    </div>
+                    <span className="text-2xl font-bold">{stats.total}</span>
                   </div>
-                  <div className="text-right">
-                    <p className="text-3xl font-bold">{stats.total}</p>
-                    <p className="text-xs text-muted-foreground">Pengajuan</p>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <h3 className="font-semibold text-lg">Beasiswa {config.label}</h3>
-                
-                {/* Progress Bar */}
-                <div className="space-y-1">
-                  <div className="flex justify-between text-xs">
-                    <span className="text-muted-foreground">Tingkat Verifikasi</span>
-                    <span className={cn("font-medium", config.text)}>{completionRate}%</span>
-                  </div>
-                  <div className="h-2 bg-muted rounded-full overflow-hidden">
+                  <p className="font-medium text-sm">{config.label}</p>
+                  
+                  {/* Progress bar */}
+                  <div className="mt-2 h-1.5 bg-muted rounded-full overflow-hidden">
                     <div 
-                      className={cn("h-full bg-gradient-to-r transition-all duration-500", config.gradient)}
-                      style={{ width: `${completionRate}%` }}
+                      className={cn("h-full bg-gradient-to-r transition-all", config.gradient)}
+                      style={{ width: `${rate}%` }}
                     />
                   </div>
-                </div>
-
-                {/* Mini Stats */}
-                <div className="grid grid-cols-3 gap-2 text-center pt-2 border-t">
-                  <div>
-                    <p className="text-lg font-semibold text-warning">{stats.menunggu}</p>
-                    <p className="text-[10px] text-muted-foreground">Menunggu</p>
-                  </div>
-                  <div>
-                    <p className="text-lg font-semibold text-success">{stats.diverifikasi}</p>
-                    <p className="text-[10px] text-muted-foreground">Verified</p>
-                  </div>
-                  <div>
-                    <p className="text-lg font-semibold text-destructive">{stats.ditolak}</p>
-                    <p className="text-[10px] text-muted-foreground">Ditolak</p>
+                  
+                  {/* Mini stats on hover */}
+                  <div className="flex gap-3 mt-2 text-xs text-muted-foreground">
+                    <span className="text-warning">{stats.menunggu} pending</span>
+                    <span className="text-success">{stats.diverifikasi} ok</span>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
+              );
+            })}
+          </div>
+        </div>
+      </Card>
 
-      {/* Token Stats */}
+      {/* Token & Activity Row - Compact */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center gap-4">
-              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-violet-500 to-purple-500 flex items-center justify-center shadow-lg">
-                <Users className="w-7 h-7 text-white" />
+        <Card className="p-4">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-violet-500 to-purple-500 flex items-center justify-center shadow">
+              <Users className="w-6 h-6 text-white" />
+            </div>
+            <div className="flex-1">
+              <div className="flex items-baseline justify-between">
+                <span className="text-2xl font-bold">{totalTokens}</span>
+                <span className="text-xs text-muted-foreground">{tokenUsageRate}% used</span>
               </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Total Token</p>
-                <p className="text-3xl font-bold">{totalTokens}</p>
-                <p className="text-xs text-muted-foreground">{usedTokens} sudah digunakan</p>
+              <p className="text-sm text-muted-foreground">Total Token</p>
+              <div className="mt-1 h-1 bg-muted rounded-full overflow-hidden">
+                <div className="h-full bg-violet-500" style={{ width: `${tokenUsageRate}%` }} />
               </div>
             </div>
-          </CardContent>
+          </div>
         </Card>
 
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center gap-4">
-              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center shadow-lg">
-                <TrendingUp className="w-7 h-7 text-white" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Token Tersedia</p>
-                <p className="text-3xl font-bold">{totalTokens - usedTokens}</p>
-                <p className="text-xs text-muted-foreground">Siap digunakan</p>
-              </div>
+        <Card className="p-4">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center shadow">
+              <TrendingUp className="w-6 h-6 text-white" />
             </div>
-          </CardContent>
+            <div>
+              <span className="text-2xl font-bold">{totalTokens - usedTokens}</span>
+              <p className="text-sm text-muted-foreground">Token Tersedia</p>
+            </div>
+          </div>
         </Card>
 
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center gap-4">
-              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-orange-500 to-red-500 flex items-center justify-center shadow-lg">
-                <Calendar className="w-7 h-7 text-white" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Pengajuan Terbaru</p>
-                <p className="text-3xl font-bold">{recentSubmissions}</p>
-                <p className="text-xs text-muted-foreground">7 hari terakhir</p>
-              </div>
+        <Card className="p-4">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-orange-500 to-red-500 flex items-center justify-center shadow">
+              <Calendar className="w-6 h-6 text-white" />
             </div>
-          </CardContent>
+            <div>
+              <span className="text-2xl font-bold">{recentSubmissions}</span>
+              <p className="text-sm text-muted-foreground">7 Hari Terakhir</p>
+            </div>
+          </div>
         </Card>
       </div>
     </div>

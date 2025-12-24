@@ -1,4 +1,4 @@
-import { FileText, Key, FormInput, Settings, LayoutDashboard, LogOut, CheckSquare } from "lucide-react";
+import { FileText, Key, FormInput, Settings, LayoutDashboard, LogOut, CheckSquare, Copy, BadgeCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface AdminSidebarProps {
@@ -10,6 +10,8 @@ interface AdminSidebarProps {
 const menuItems = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
   { id: "submissions", label: "Data Pengajuan", icon: FileText },
+  { id: "verified", label: "Terverifikasi", icon: BadgeCheck },
+  { id: "duplicates", label: "Duplikasi", icon: Copy },
   { id: "tokens", label: "Kode Token", icon: Key },
   { id: "form-fields", label: "Kelola Form", icon: FormInput },
   { id: "success-templates", label: "Template Sukses", icon: CheckSquare },
