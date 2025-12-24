@@ -4,7 +4,7 @@ import {
   TrendingUp, Users, Calendar, ArrowUpRight
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-
+import { SubmissionChart } from "./SubmissionChart";
 type ScholarshipCategory = "prestasi" | "yatim" | "ekonomi" | "umum";
 
 interface CategoryStats {
@@ -206,6 +206,9 @@ export function AnalyticsDashboard({ categoryStats, totalTokens, usedTokens, rec
           </div>
         </Card>
       </div>
+
+      {/* Submission Chart */}
+      <SubmissionChart />
     </div>
   );
 }
