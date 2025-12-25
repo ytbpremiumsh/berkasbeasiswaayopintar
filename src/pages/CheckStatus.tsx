@@ -147,24 +147,31 @@ const CheckStatus = () => {
                     </div>
                   ) : (
                     <div className="space-y-4">
-                      <div className={`p-6 rounded-xl ${statusConfig[result.submission.status as SubmissionStatus]?.bgColor || "bg-muted"} border`}>
-                        <div className="flex items-center gap-3">
-                          <div className={`w-12 h-12 rounded-full ${statusConfig[result.submission.status as SubmissionStatus]?.bgColor} flex items-center justify-center`}>
-                            {(() => {
-                              const Icon = statusConfig[result.submission.status as SubmissionStatus]?.icon || FileText;
-                              return <Icon className={`w-6 h-6 ${statusConfig[result.submission.status as SubmissionStatus]?.color}`} />;
-                            })()}
-                          </div>
-                          <div>
-                            <p className={`font-semibold ${statusConfig[result.submission.status as SubmissionStatus]?.color}`}>
-                              Sudah Mengirimkan Berkas
-                            </p>
-                            <Badge variant={result.submission.status === "diverifikasi" ? "default" : result.submission.status === "ditolak" ? "destructive" : "secondary"}>
-                              {statusConfig[result.submission.status as SubmissionStatus]?.label || result.submission.status}
-                            </Badge>
+                      {result.submission.status === "ditolak" ? (
+                        <div className="p-6 rounded-xl bg-red-100 border border-red-200">
+                          <div className="flex items-center gap-3">
+                            <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center">
+                              <XCircle className="w-6 h-6 text-red-600" />
+                            </div>
+                            <div>
+                              <p className="font-semibold text-red-600">Pengajuan Ditolak</p>
+                              <p className="text-sm text-red-500">Silakan hubungi admin untuk informasi lebih lanjut</p>
+                            </div>
                           </div>
                         </div>
-                      </div>
+                      ) : (
+                        <div className="p-6 rounded-xl bg-emerald-100 border border-emerald-200">
+                          <div className="flex items-center gap-3">
+                            <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center">
+                              <CheckCircle className="w-6 h-6 text-emerald-600" />
+                            </div>
+                            <div>
+                              <p className="font-semibold text-emerald-600">Berkas Sudah Terkirim</p>
+                              <p className="text-sm text-emerald-500">Pengajuan beasiswa Anda telah berhasil dikirim</p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
 
                       <div className="p-4 rounded-lg bg-muted/50 space-y-2">
                         <div className="flex justify-between text-sm">
