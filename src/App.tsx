@@ -9,6 +9,7 @@ import ScholarshipForm from "./pages/ScholarshipForm";
 import SuccessPage from "./pages/SuccessPage";
 import AdminLogin from "./pages/AdminLogin";
 import AdminDashboard from "./pages/AdminDashboard";
+import CheckStatus from "./pages/CheckStatus";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -25,6 +26,7 @@ const App = () => (
           <Route path="/beasiswa/:category" element={<ScholarshipForm />} />
           <Route path="/sukses" element={<SuccessPage />} />
           <Route path="/sukses/:category" element={<SuccessPage />} />
+          <Route path="/cek-status" element={<CheckStatus />} />
           <Route path="/admin/login" element={<AdminLogin />} />
           <Route path="/admin" element={<AdminDashboard />} />
           <Route path="*" element={<NotFound />} />

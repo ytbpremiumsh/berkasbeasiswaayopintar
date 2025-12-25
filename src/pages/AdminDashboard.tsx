@@ -44,6 +44,7 @@ const AdminDashboard = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [submissions, setSubmissions] = useState<any[]>([]);
   const [tokens, setTokens] = useState<any[]>([]);
   const [selectedSubmission, setSelectedSubmission] = useState<any>(null);
@@ -272,15 +273,21 @@ const AdminDashboard = () => {
 
   return (
     <div className="min-h-screen flex bg-muted/30">
-      {/* Sidebar */}
-      <div className={cn("hidden lg:block", sidebarOpen ? "block" : "hidden")}>
-        <AdminSidebar activeTab={activeTab} onTabChange={setActiveTab} onLogout={handleLogout} />
+      {/* Sidebar - Desktop */}
+      <div className="hidden lg:block sticky top-0 h-screen">
+        <AdminSidebar 
+          activeTab={activeTab} 
+          onTabChange={setActiveTab} 
+          onLogout={handleLogout}
+          isCollapsed={sidebarCollapsed}
+          onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
+        />
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col min-h-screen overflow-hidden">
+      <div className="flex-1 flex flex-col min-h-screen">
         {/* Mobile Header */}
-        <header className="lg:hidden bg-card border-b p-4 flex items-center justify-between">
+        <header className="lg:hidden bg-card border-b p-4 flex items-center justify-between sticky top-0 z-40">
           <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(!sidebarOpen)}>
             <Menu className="w-5 h-5" />
           </Button>
@@ -297,7 +304,7 @@ const AdminDashboard = () => {
           </div>
         )}
 
-        {/* Content Area */}
+        {/* Content Area - Scrollable */}
         <main className="flex-1 overflow-y-auto p-6">
           {/* Dashboard */}
           {activeTab === "dashboard" && (
