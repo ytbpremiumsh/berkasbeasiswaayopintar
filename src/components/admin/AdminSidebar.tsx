@@ -1,10 +1,13 @@
-import { FileText, Key, FormInput, Settings, LayoutDashboard, LogOut, CheckSquare, Copy, BadgeCheck } from "lucide-react";
+import { FileText, Key, FormInput, Settings, LayoutDashboard, LogOut, CheckSquare, Copy, BadgeCheck, PanelLeftClose, PanelLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 
 interface AdminSidebarProps {
   activeTab: string;
   onTabChange: (tab: string) => void;
   onLogout: () => void;
+  isCollapsed?: boolean;
+  onToggleCollapse?: () => void;
 }
 
 const menuItems = [
@@ -18,24 +21,41 @@ const menuItems = [
   { id: "settings", label: "Pengaturan", icon: Settings },
 ];
 
-export function AdminSidebar({ activeTab, onTabChange, onLogout }: AdminSidebarProps) {
+export function AdminSidebar({ activeTab, onTabChange, onLogout, isCollapsed = false, onToggleCollapse }: AdminSidebarProps) {
   return (
-    <aside className="w-64 bg-card border-r min-h-screen flex flex-col">
+    <aside className={cn(
+      "bg-card border-r min-h-screen flex flex-col transition-all duration-300",
+      isCollapsed ? "w-16" : "w-64"
+    )}>
       {/* Logo */}
-      <div className="p-6 border-b">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center">
-            <LayoutDashboard className="w-5 h-5 text-white" />
+      <div className="p-4 border-b">
+        <div className="flex items-center justify-between">
+          <div className={cn("flex items-center gap-3", isCollapsed && "justify-center")}>
+            <div className="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center shrink-0">
+              <LayoutDashboard className="w-5 h-5 text-white" />
+            </div>
+            {!isCollapsed && (
+              <div>
+                <h1 className="font-bold text-foreground">Admin Panel</h1>
+                <p className="text-xs text-muted-foreground">Beasiswa Ayo Pintar</p>
+              </div>
+            )}
           </div>
-          <div>
-            <h1 className="font-bold text-foreground">Admin Panel</h1>
-            <p className="text-xs text-muted-foreground">Beasiswa Ayo Pintar</p>
-          </div>
+          {onToggleCollapse && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onToggleCollapse}
+              className={cn("shrink-0", isCollapsed && "mx-auto mt-2")}
+            >
+              {isCollapsed ? <PanelLeft className="w-4 h-4" /> : <PanelLeftClose className="w-4 h-4" />}
+            </Button>
+          )}
         </div>
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 p-4 space-y-1">
+      <nav className="flex-1 p-2 space-y-1 overflow-y-auto">
         {menuItems.map((item) => {
           const Icon = item.icon;
           const isActive = activeTab === item.id;
@@ -43,28 +63,34 @@ export function AdminSidebar({ activeTab, onTabChange, onLogout }: AdminSidebarP
             <button
               key={item.id}
               onClick={() => onTabChange(item.id)}
+              title={isCollapsed ? item.label : undefined}
               className={cn(
-                "w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200",
+                "w-full flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium transition-all duration-200",
+                isCollapsed && "justify-center px-2",
                 isActive
                   ? "bg-primary text-primary-foreground shadow-md"
                   : "text-muted-foreground hover:bg-muted hover:text-foreground"
               )}
             >
-              <Icon className="w-5 h-5" />
-              {item.label}
+              <Icon className="w-5 h-5 shrink-0" />
+              {!isCollapsed && item.label}
             </button>
           );
         })}
       </nav>
 
       {/* Logout */}
-      <div className="p-4 border-t">
+      <div className="p-2 border-t">
         <button
           onClick={onLogout}
-          className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-all duration-200"
+          title={isCollapsed ? "Keluar" : undefined}
+          className={cn(
+            "w-full flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-all duration-200",
+            isCollapsed && "justify-center px-2"
+          )}
         >
-          <LogOut className="w-5 h-5" />
-          Keluar
+          <LogOut className="w-5 h-5 shrink-0" />
+          {!isCollapsed && "Keluar"}
         </button>
       </div>
     </aside>
