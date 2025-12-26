@@ -16,6 +16,7 @@ import { FormFieldsManager } from "@/components/admin/FormFieldsManager";
 import { SuccessTemplatesManager } from "@/components/admin/SuccessTemplatesManager";
 import { DuplicateSubmissions } from "@/components/admin/DuplicateSubmissions";
 import { VerifiedSubmissions } from "@/components/admin/VerifiedSubmissions";
+import { StaffManager } from "@/components/admin/StaffManager";
 import * as XLSX from "xlsx";
 import { cn } from "@/lib/utils";
 import { 
@@ -691,6 +692,9 @@ const AdminDashboard = () => {
               </div>
             </div>
           )}
+
+          {/* Staff Management */}
+          {activeTab === "staff" && <StaffManager />}
         </main>
       </div>
     </div>
