@@ -167,6 +167,27 @@ CREATE TABLE public.category_urls (
 
 
 --
+-- Name: form_fields; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.form_fields (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    category character varying(20) NOT NULL,
+    field_name text NOT NULL,
+    field_label text NOT NULL,
+    field_type character varying(20) DEFAULT 'text'::character varying NOT NULL,
+    is_required boolean DEFAULT false NOT NULL,
+    is_active boolean DEFAULT true NOT NULL,
+    display_order integer DEFAULT 0 NOT NULL,
+    description text,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT form_fields_category_check CHECK (((category)::text = ANY ((ARRAY['prestasi'::character varying, 'yatim'::character varying, 'ekonomi'::character varying, 'umum'::character varying])::text[]))),
+    CONSTRAINT form_fields_field_type_check CHECK (((field_type)::text = ANY ((ARRAY['text'::character varying, 'textarea'::character varying, 'file'::character varying, 'url'::character varying])::text[])))
+);
+
+
+--
 -- Name: profiles; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -230,6 +251,24 @@ CREATE TABLE public.scholarship_tokens (
 
 
 --
+-- Name: success_templates; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.success_templates (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    category character varying NOT NULL,
+    title text DEFAULT 'Berkas Terkirim!'::text NOT NULL,
+    description text DEFAULT 'Pengajuan beasiswa Anda telah berhasil dikirim. Tim kami akan memverifikasi berkas Anda dalam waktu 3-7 hari kerja.'::text NOT NULL,
+    note text DEFAULT 'Kami akan mengirimkan notifikasi melalui WhatsApp dan email setelah proses verifikasi selesai.'::text,
+    button_text text DEFAULT 'Kembali ke Beranda'::text NOT NULL,
+    button_link text DEFAULT '/'::text NOT NULL,
+    is_active boolean DEFAULT true NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+--
 -- Name: user_roles; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -274,6 +313,22 @@ ALTER TABLE ONLY public.category_urls
 
 
 --
+-- Name: form_fields form_fields_category_field_name_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.form_fields
+    ADD CONSTRAINT form_fields_category_field_name_key UNIQUE (category, field_name);
+
+
+--
+-- Name: form_fields form_fields_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.form_fields
+    ADD CONSTRAINT form_fields_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: profiles profiles_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -306,6 +361,22 @@ ALTER TABLE ONLY public.scholarship_tokens
 
 
 --
+-- Name: success_templates success_templates_category_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.success_templates
+    ADD CONSTRAINT success_templates_category_key UNIQUE (category);
+
+
+--
+-- Name: success_templates success_templates_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.success_templates
+    ADD CONSTRAINT success_templates_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: user_roles user_roles_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -319,6 +390,13 @@ ALTER TABLE ONLY public.user_roles
 
 ALTER TABLE ONLY public.user_roles
     ADD CONSTRAINT user_roles_user_id_role_key UNIQUE (user_id, role);
+
+
+--
+-- Name: form_fields update_form_fields_updated_at; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER update_form_fields_updated_at BEFORE UPDATE ON public.form_fields FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
 
 
 --
@@ -340,6 +418,13 @@ CREATE TRIGGER update_settings_updated_at BEFORE UPDATE ON public.admin_settings
 --
 
 CREATE TRIGGER update_submissions_updated_at BEFORE UPDATE ON public.scholarship_submissions FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
+
+
+--
+-- Name: success_templates update_success_templates_updated_at; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER update_success_templates_updated_at BEFORE UPDATE ON public.success_templates FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
 
 
 --
@@ -366,14 +451,6 @@ ALTER TABLE ONLY public.scholarship_submissions
 
 
 --
--- Name: scholarship_submissions scholarship_submissions_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.scholarship_submissions
-    ADD CONSTRAINT scholarship_submissions_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE;
-
-
---
 -- Name: scholarship_tokens scholarship_tokens_used_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -397,6 +474,13 @@ CREATE POLICY "Admins can manage category URLs" ON public.category_urls USING (p
 
 
 --
+-- Name: form_fields Admins can manage form fields; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY "Admins can manage form fields" ON public.form_fields USING (public.has_role(auth.uid(), 'admin'::public.app_role));
+
+
+--
 -- Name: user_roles Admins can manage roles; Type: POLICY; Schema: public; Owner: -
 --
 
@@ -408,6 +492,13 @@ CREATE POLICY "Admins can manage roles" ON public.user_roles USING (public.has_r
 --
 
 CREATE POLICY "Admins can manage settings" ON public.admin_settings USING (public.has_role(auth.uid(), 'admin'::public.app_role));
+
+
+--
+-- Name: success_templates Admins can manage success templates; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY "Admins can manage success templates" ON public.success_templates USING (public.has_role(auth.uid(), 'admin'::public.app_role));
 
 
 --
@@ -453,10 +544,24 @@ CREATE POLICY "Anyone can validate tokens" ON public.scholarship_tokens FOR SELE
 
 
 --
+-- Name: form_fields Anyone can view active form fields; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY "Anyone can view active form fields" ON public.form_fields FOR SELECT USING ((is_active = true));
+
+
+--
 -- Name: category_urls Anyone can view category URLs; Type: POLICY; Schema: public; Owner: -
 --
 
 CREATE POLICY "Anyone can view category URLs" ON public.category_urls FOR SELECT USING (true);
+
+
+--
+-- Name: success_templates Anyone can view success templates; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY "Anyone can view success templates" ON public.success_templates FOR SELECT USING ((is_active = true));
 
 
 --
@@ -521,6 +626,12 @@ ALTER TABLE public.admin_settings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.category_urls ENABLE ROW LEVEL SECURITY;
 
 --
+-- Name: form_fields; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.form_fields ENABLE ROW LEVEL SECURITY;
+
+--
 -- Name: profiles; Type: ROW SECURITY; Schema: public; Owner: -
 --
 
@@ -537,6 +648,12 @@ ALTER TABLE public.scholarship_submissions ENABLE ROW LEVEL SECURITY;
 --
 
 ALTER TABLE public.scholarship_tokens ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: success_templates; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.success_templates ENABLE ROW LEVEL SECURITY;
 
 --
 -- Name: user_roles; Type: ROW SECURITY; Schema: public; Owner: -
