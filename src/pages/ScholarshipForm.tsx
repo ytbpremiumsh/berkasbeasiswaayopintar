@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { Loader2, ArrowLeft, ArrowRight, CheckCircle, Trophy, Heart, Wallet, Globe } from "lucide-react";
+import { AdsenseAd } from "@/components/AdsenseAd";
 
 type ScholarshipCategory = "prestasi" | "yatim" | "ekonomi" | "umum";
 type ApplicantStatus = "pelajar" | "gap_year" | "mahasiswa";
@@ -536,7 +537,13 @@ const ScholarshipForm = () => {
             </div>
           </CardContent>
         </Card>
+        
+        {/* Content Bottom Ad */}
+        <AdsenseAd placement="content_bottom" className="mt-8" />
       </main>
+      
+      {/* Footer Ad */}
+      <AdsenseAd placement="footer" className="container mx-auto px-4 mb-4" />
     </div>
   );
 };

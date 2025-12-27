@@ -35,6 +35,36 @@ export type Database = {
         }
         Relationships: []
       }
+      adsense_settings: {
+        Row: {
+          adsense_code: string | null
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          placement_key: string
+          updated_at: string
+        }
+        Insert: {
+          adsense_code?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          placement_key: string
+          updated_at?: string
+        }
+        Update: {
+          adsense_code?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          placement_key?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       category_urls: {
         Row: {
           category: Database["public"]["Enums"]["scholarship_category"]
