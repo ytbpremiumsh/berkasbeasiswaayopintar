@@ -17,6 +17,7 @@ import { SuccessTemplatesManager } from "@/components/admin/SuccessTemplatesMana
 import { DuplicateSubmissions } from "@/components/admin/DuplicateSubmissions";
 import { VerifiedSubmissions } from "@/components/admin/VerifiedSubmissions";
 import { StaffManager } from "@/components/admin/StaffManager";
+import { AdsenseManager } from "@/components/admin/AdsenseManager";
 import * as XLSX from "xlsx";
 import { cn } from "@/lib/utils";
 import { 
@@ -695,6 +696,9 @@ const AdminDashboard = () => {
 
           {/* Staff Management */}
           {activeTab === "staff" && <StaffManager />}
+
+          {/* AdSense Management */}
+          {activeTab === "adsense" && <AdsenseManager />}
         </main>
       </div>
     </div>

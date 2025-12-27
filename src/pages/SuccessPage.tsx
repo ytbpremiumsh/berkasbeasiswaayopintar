@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { CheckCircle, ArrowRight, Trophy, Heart, Wallet, Globe, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { AdsenseAd } from "@/components/AdsenseAd";
 
 type ScholarshipCategory = "prestasi" | "yatim" | "ekonomi" | "umum";
 
@@ -87,39 +88,50 @@ const SuccessPage = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
+      {/* Header Ad */}
+      <AdsenseAd placement="header" className="container mx-auto px-4 mt-4" />
+      
       <main className="flex-1 flex items-center justify-center p-4">
-        <Card variant="elevated" className="max-w-md w-full text-center animate-scale-in">
-          <CardHeader className="pb-4">
-            <div className={`w-24 h-24 rounded-full bg-gradient-to-br ${gradient} flex items-center justify-center mx-auto mb-4 shadow-lg`}>
-              <div className="w-20 h-20 rounded-full bg-background/20 flex items-center justify-center">
-                <CheckCircle className="w-10 h-10 text-white" />
+        <div className="max-w-md w-full space-y-6">
+          <Card variant="elevated" className="text-center animate-scale-in">
+            <CardHeader className="pb-4">
+              <div className={`w-24 h-24 rounded-full bg-gradient-to-br ${gradient} flex items-center justify-center mx-auto mb-4 shadow-lg`}>
+                <div className="w-20 h-20 rounded-full bg-background/20 flex items-center justify-center">
+                  <CheckCircle className="w-10 h-10 text-white" />
+                </div>
               </div>
-            </div>
-            <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${gradient} flex items-center justify-center mx-auto mb-4`}>
-              <Icon className="w-6 h-6 text-white" />
-            </div>
-            <CardTitle className="text-2xl">{template.title}</CardTitle>
-            <CardDescription className="text-base mt-2">
-              {template.description}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {template.note && (
-              <div className="bg-muted/50 rounded-lg p-4">
-                <p className="text-sm text-muted-foreground">
-                  {template.note}
-                </p>
+              <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${gradient} flex items-center justify-center mx-auto mb-4`}>
+                <Icon className="w-6 h-6 text-white" />
               </div>
-            )}
-            <Button asChild className="w-full" size="lg">
-              <Link to={template.button_link}>
-                {template.button_text}
-                <ArrowRight className="w-4 h-4 ml-2" />
-              </Link>
-            </Button>
-          </CardContent>
-        </Card>
+              <CardTitle className="text-2xl">{template.title}</CardTitle>
+              <CardDescription className="text-base mt-2">
+                {template.description}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {template.note && (
+                <div className="bg-muted/50 rounded-lg p-4">
+                  <p className="text-sm text-muted-foreground">
+                    {template.note}
+                  </p>
+                </div>
+              )}
+              <Button asChild className="w-full" size="lg">
+                <Link to={template.button_link}>
+                  {template.button_text}
+                  <ArrowRight className="w-4 h-4 ml-2" />
+                </Link>
+              </Button>
+            </CardContent>
+          </Card>
+          
+          {/* Content Bottom Ad */}
+          <AdsenseAd placement="content_bottom" />
+        </div>
       </main>
+      
+      {/* Footer Ad */}
+      <AdsenseAd placement="footer" className="container mx-auto px-4 mb-4" />
     </div>
   );
 };

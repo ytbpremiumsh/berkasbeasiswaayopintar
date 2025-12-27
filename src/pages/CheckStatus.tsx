@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Search, CheckCircle, XCircle, Clock, FileText, Loader2 } from "lucide-react";
 import { SimpleHeader } from "@/components/SimpleHeader";
 import { Footer } from "@/components/Footer";
+import { AdsenseAd } from "@/components/AdsenseAd";
 
 type SubmissionStatus = "menunggu" | "diverifikasi" | "ditolak";
 
@@ -186,8 +187,14 @@ const CheckStatus = () => {
             </CardContent>
           </Card>
         </div>
+        
+        {/* Content Bottom Ad */}
+        <AdsenseAd placement="content_bottom" className="mt-8 max-w-md mx-auto" />
       </main>
 
+      {/* Footer Ad */}
+      <AdsenseAd placement="footer" className="container mx-auto px-4 mb-4" />
+      
       <Footer />
     </div>
   );

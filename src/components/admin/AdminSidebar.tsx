@@ -1,4 +1,4 @@
-import { FileText, Key, FormInput, Settings, LayoutDashboard, LogOut, CheckSquare, Copy, BadgeCheck, PanelLeftClose, PanelLeft, Users } from "lucide-react";
+import { FileText, Key, FormInput, Settings, LayoutDashboard, LogOut, CheckSquare, Copy, BadgeCheck, PanelLeftClose, PanelLeft, Users, MonitorPlay } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
@@ -19,6 +19,7 @@ const menuItems = [
   { id: "form-fields", label: "Kelola Form", icon: FormInput },
   { id: "success-templates", label: "Template Sukses", icon: CheckSquare },
   { id: "staff", label: "Kelola Staff", icon: Users },
+  { id: "adsense", label: "Kelola AdSense", icon: MonitorPlay },
   { id: "settings", label: "Pengaturan", icon: Settings },
 ];
 
