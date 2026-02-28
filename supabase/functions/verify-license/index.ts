@@ -7,7 +7,7 @@ const corsHeaders = {
 };
 
 const MAYAR_API_URL = "https://api.mayar.id/software/v1/license/verify";
-const MAYAR_PRODUCT_ID = "8fedc066-ad35-460f-92b4-9193bab866b6";
+const DEFAULT_PRODUCT_ID = "8fedc066-ad35-460f-92b4-9193bab866b6";
 
 serve(async (req) => {
   // Handle CORS preflight
@@ -41,6 +41,15 @@ serve(async (req) => {
       .maybeSingle();
 
     const MAYAR_API_KEY = (mayarSetting?.setting_value as any)?.value || Deno.env.get("MAYAR_API_KEY");
+
+    // Get Product ID from admin_settings
+    const { data: productIdSetting } = await supabase
+      .from("admin_settings")
+      .select("setting_value")
+      .eq("setting_key", "mayar_product_id")
+      .maybeSingle();
+
+    const MAYAR_PRODUCT_ID = (productIdSetting?.setting_value as any)?.value || DEFAULT_PRODUCT_ID;
     
     if (!MAYAR_API_KEY) {
       console.error("MAYAR_API_KEY is not configured");

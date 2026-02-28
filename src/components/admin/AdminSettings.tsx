@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 
 export function AdminSettings() {
   const [mayarApiKey, setMayarApiKey] = useState("");
+  const [mayarProductId, setMayarProductId] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   
@@ -34,15 +35,15 @@ export function AdminSettings() {
       const { data, error } = await supabase
         .from("admin_settings")
         .select("*")
-        .eq("setting_key", "mayar_api_key")
-        .maybeSingle();
+        .in("setting_key", ["mayar_api_key", "mayar_product_id"]);
 
       if (error) throw error;
 
-      if (data) {
-        const value = (data.setting_value as any)?.value || "";
-        setMayarApiKey(value);
-      }
+      data?.forEach((item) => {
+        const value = (item.setting_value as any)?.value || "";
+        if (item.setting_key === "mayar_api_key") setMayarApiKey(value);
+        if (item.setting_key === "mayar_product_id") setMayarProductId(value);
+      });
     } catch (error) {
       console.error("Error fetching settings:", error);
     } finally {
@@ -75,14 +76,23 @@ export function AdminSettings() {
   const saveSettings = async () => {
     setIsSaving(true);
     try {
-      const { error } = await supabase
+      const { error: err1 } = await supabase
         .from("admin_settings")
         .upsert({
           setting_key: "mayar_api_key",
           setting_value: { value: mayarApiKey },
         }, { onConflict: "setting_key" });
 
-      if (error) throw error;
+      if (err1) throw err1;
+
+      const { error: err2 } = await supabase
+        .from("admin_settings")
+        .upsert({
+          setting_key: "mayar_product_id",
+          setting_value: { value: mayarProductId },
+        }, { onConflict: "setting_key" });
+
+      if (err2) throw err2;
 
       toast({ title: "Pengaturan Mayar berhasil disimpan" });
     } catch (error: any) {
@@ -273,6 +283,15 @@ export function AdminSettings() {
               onChange={(e) => setMayarApiKey(e.target.value)}
             />
             <p className="text-xs text-muted-foreground">API Key ini digunakan untuk memvalidasi kode token dari Mayar</p>
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium">ID Produk Lisensi</label>
+            <Input
+              placeholder="Masukkan Product ID dari Mayar"
+              value={mayarProductId}
+              onChange={(e) => setMayarProductId(e.target.value)}
+            />
+            <p className="text-xs text-muted-foreground">Product ID digunakan untuk verifikasi lisensi token beasiswa. Dapatkan dari dashboard Mayar.</p>
           </div>
           <Button onClick={saveSettings} disabled={isSaving}>
             {isSaving ? (
