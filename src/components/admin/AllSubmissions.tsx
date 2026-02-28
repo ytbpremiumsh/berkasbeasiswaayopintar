@@ -7,7 +7,9 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Loader2, Eye, CheckCircle, XCircle, Download, Trophy, Heart, Wallet, Globe, ExternalLink, FileText } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Loader2, Eye, CheckCircle, XCircle, Download, Trophy, Heart, Wallet, Globe, ExternalLink, FileText, Trash2 } from "lucide-react";
 import * as XLSX from "xlsx";
 
 type ScholarshipCategory = "prestasi" | "yatim" | "ekonomi" | "umum";
@@ -40,7 +42,6 @@ interface Submission {
   verified_at: string | null;
   token_code?: string;
   verified_by_name?: string;
-  // File URLs
   kartu_pelajar_url: string | null;
   ktm_url: string | null;
   cv_url: string | null;
@@ -68,6 +69,8 @@ export function AllSubmissions({ onStatusUpdate }: AllSubmissionsProps) {
   const [filterCategory, setFilterCategory] = useState<"all" | ScholarshipCategory>("all");
   const [filterStatus, setFilterStatus] = useState<"all" | SubmissionStatus>("all");
   const [selectedSubmission, setSelectedSubmission] = useState<Submission | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     fetchSubmissions();
@@ -86,7 +89,6 @@ export function AllSubmissions({ onStatusUpdate }: AllSubmissionsProps) {
 
       if (error) throw error;
 
-      // Get admin profiles for verified_by names
       const verifiedByIds = data?.map(s => s.verified_by).filter(Boolean) || [];
       let profileMap = new Map();
       
@@ -106,6 +108,7 @@ export function AllSubmissions({ onStatusUpdate }: AllSubmissionsProps) {
       })) || [];
 
       setSubmissions(subsWithDetails);
+      setSelectedIds(new Set());
     } catch (error: any) {
       console.error("Fetch error:", error);
       toast({ title: "Gagal memuat data", description: error.message, variant: "destructive" });
@@ -140,11 +143,48 @@ export function AllSubmissions({ onStatusUpdate }: AllSubmissionsProps) {
     }
   };
 
+  const deleteSubmissions = async (ids: string[]) => {
+    setIsDeleting(true);
+    try {
+      const { error } = await supabase
+        .from("scholarship_submissions")
+        .delete()
+        .in("id", ids);
+
+      if (error) throw error;
+
+      toast({ title: "Berhasil dihapus", description: `${ids.length} pengajuan telah dihapus` });
+      fetchSubmissions();
+      onStatusUpdate();
+    } catch (error: any) {
+      toast({ title: "Gagal menghapus", description: error.message, variant: "destructive" });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   const filteredSubmissions = submissions.filter(s => {
     if (filterCategory !== "all" && s.category !== filterCategory) return false;
     if (filterStatus !== "all" && s.status !== filterStatus) return false;
     return true;
   });
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === filteredSubmissions.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(filteredSubmissions.map(s => s.id)));
+    }
+  };
 
   const exportToExcel = () => {
     if (filteredSubmissions.length === 0) {
@@ -188,7 +228,6 @@ export function AllSubmissions({ onStatusUpdate }: AllSubmissionsProps) {
     toast({ title: "Export berhasil", description: `${filteredSubmissions.length} data berhasil diexport` });
   };
 
-  // Stats
   const stats = {
     total: submissions.length,
     menunggu: submissions.filter(s => s.status === "menunggu").length,
@@ -281,6 +320,33 @@ export function AllSubmissions({ onStatusUpdate }: AllSubmissionsProps) {
               </CardDescription>
             </div>
             <div className="flex flex-wrap gap-2">
+              {selectedIds.size > 0 && (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="destructive" size="sm" disabled={isDeleting}>
+                      {isDeleting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Trash2 className="w-4 h-4 mr-2" />}
+                      Hapus ({selectedIds.size})
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Hapus {selectedIds.size} Pengajuan?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Data yang dihapus tidak dapat dikembalikan. Apakah Anda yakin ingin menghapus {selectedIds.size} pengajuan yang dipilih?
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Batal</AlertDialogCancel>
+                      <AlertDialogAction
+                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        onClick={() => deleteSubmissions(Array.from(selectedIds))}
+                      >
+                        Hapus
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              )}
               <Select value={filterCategory} onValueChange={(v) => setFilterCategory(v as any)}>
                 <SelectTrigger className="w-[140px]">
                   <SelectValue placeholder="Kategori" />
@@ -321,6 +387,12 @@ export function AllSubmissions({ onStatusUpdate }: AllSubmissionsProps) {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="w-10">
+                      <Checkbox
+                        checked={selectedIds.size === filteredSubmissions.length && filteredSubmissions.length > 0}
+                        onCheckedChange={toggleSelectAll}
+                      />
+                    </TableHead>
                     <TableHead>No</TableHead>
                     <TableHead>Nama</TableHead>
                     <TableHead>Kategori</TableHead>
@@ -338,7 +410,13 @@ export function AllSubmissions({ onStatusUpdate }: AllSubmissionsProps) {
                     const Icon = catConfig?.icon || Globe;
 
                     return (
-                      <TableRow key={sub.id}>
+                      <TableRow key={sub.id} data-state={selectedIds.has(sub.id) ? "selected" : undefined}>
+                        <TableCell>
+                          <Checkbox
+                            checked={selectedIds.has(sub.id)}
+                            onCheckedChange={() => toggleSelect(sub.id)}
+                          />
+                        </TableCell>
                         <TableCell>{idx + 1}</TableCell>
                         <TableCell>
                           <div>
@@ -378,94 +456,120 @@ export function AllSubmissions({ onStatusUpdate }: AllSubmissionsProps) {
                           {new Date(sub.submitted_at).toLocaleDateString("id-ID")}
                         </TableCell>
                         <TableCell>
-                          <Dialog>
-                            <DialogTrigger asChild>
-                              <Button 
-                                variant="ghost" 
-                                size="icon"
-                                onClick={() => setSelectedSubmission(sub)}
-                              >
-                                <Eye className="w-4 h-4" />
-                              </Button>
-                            </DialogTrigger>
-                            <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-                              <DialogHeader>
-                                <DialogTitle>Detail Pengajuan</DialogTitle>
-                              </DialogHeader>
-                              {selectedSubmission && (
-                                <div className="space-y-4">
-                                  <div className="grid grid-cols-2 gap-4 text-sm">
-                                    <div><span className="text-muted-foreground">Nama:</span> <strong>{selectedSubmission.full_name}</strong></div>
-                                    <div><span className="text-muted-foreground">Email:</span> <strong>{selectedSubmission.email}</strong></div>
-                                    <div><span className="text-muted-foreground">Telepon:</span> <strong>{selectedSubmission.phone || "-"}</strong></div>
-                                    <div><span className="text-muted-foreground">Kategori:</span> <strong className="capitalize">{categoryConfig[selectedSubmission.category]?.label}</strong></div>
-                                    <div><span className="text-muted-foreground">Status Pendaftar:</span> <strong className="capitalize">{selectedSubmission.applicant_status?.replace("_", " ")}</strong></div>
-                                    <div><span className="text-muted-foreground">Institusi:</span> <strong>{selectedSubmission.institution_name || "-"}</strong></div>
-                                    <div><span className="text-muted-foreground">Kode Token:</span> <code className="text-xs bg-muted px-2 py-1 rounded font-mono">{selectedSubmission.token_code}</code></div>
-                                    <div><span className="text-muted-foreground">Status:</span> <Badge variant={statusConfig[selectedSubmission.status]?.variant}>{statusConfig[selectedSubmission.status]?.label}</Badge></div>
-                                    {selectedSubmission.verified_by_name && (
-                                      <div className="col-span-2">
-                                        <span className="text-muted-foreground">Dikoreksi oleh:</span>{" "}
-                                        <strong>{selectedSubmission.verified_by_name}</strong>
-                                        {selectedSubmission.verified_at && (
-                                          <span className="text-muted-foreground ml-2">
-                                            ({new Date(selectedSubmission.verified_at).toLocaleString("id-ID")})
-                                          </span>
-                                        )}
-                                      </div>
-                                    )}
-                                  </div>
-                                  <hr />
-                                  <div className="space-y-2">
-                                    <h4 className="font-semibold">Berkas</h4>
-                                    <div className="grid gap-2 text-sm">
-                                      {selectedSubmission.kartu_pelajar_url && <a href={selectedSubmission.kartu_pelajar_url} target="_blank" className="flex items-center gap-2 text-primary hover:underline"><ExternalLink className="w-3 h-3" /> Kartu Pelajar</a>}
-                                      {selectedSubmission.ktm_url && <a href={selectedSubmission.ktm_url} target="_blank" className="flex items-center gap-2 text-primary hover:underline"><ExternalLink className="w-3 h-3" /> KTM</a>}
-                                      {selectedSubmission.cv_url && <a href={selectedSubmission.cv_url} target="_blank" className="flex items-center gap-2 text-primary hover:underline"><ExternalLink className="w-3 h-3" /> CV</a>}
-                                      {selectedSubmission.sertifikat_prestasi_url && <a href={selectedSubmission.sertifikat_prestasi_url} target="_blank" className="flex items-center gap-2 text-primary hover:underline"><ExternalLink className="w-3 h-3" /> Sertifikat Prestasi</a>}
-                                      {selectedSubmission.transkrip_nilai_url && <a href={selectedSubmission.transkrip_nilai_url} target="_blank" className="flex items-center gap-2 text-primary hover:underline"><ExternalLink className="w-3 h-3" /> Transkrip Nilai</a>}
-                                      {selectedSubmission.khs_url && <a href={selectedSubmission.khs_url} target="_blank" className="flex items-center gap-2 text-primary hover:underline"><ExternalLink className="w-3 h-3" /> KHS</a>}
-                                      {selectedSubmission.bukti_penghasilan_url && <a href={selectedSubmission.bukti_penghasilan_url} target="_blank" className="flex items-center gap-2 text-primary hover:underline"><ExternalLink className="w-3 h-3" /> Bukti Penghasilan</a>}
-                                      {selectedSubmission.bukti_listrik_url && <a href={selectedSubmission.bukti_listrik_url} target="_blank" className="flex items-center gap-2 text-primary hover:underline"><ExternalLink className="w-3 h-3" /> Bukti Listrik</a>}
-                                      {selectedSubmission.surat_keterangan_yatim_url && <a href={selectedSubmission.surat_keterangan_yatim_url} target="_blank" className="flex items-center gap-2 text-primary hover:underline"><ExternalLink className="w-3 h-3" /> Surat Keterangan Yatim</a>}
-                                      {selectedSubmission.sktm_url && <a href={selectedSubmission.sktm_url} target="_blank" className="flex items-center gap-2 text-primary hover:underline"><ExternalLink className="w-3 h-3" /> SKTM</a>}
-                                      {selectedSubmission.berkas_pendukung_url && <a href={selectedSubmission.berkas_pendukung_url} target="_blank" className="flex items-center gap-2 text-primary hover:underline"><ExternalLink className="w-3 h-3" /> Berkas Pendukung</a>}
-                                      {selectedSubmission.bukti_struk_url && <a href={selectedSubmission.bukti_struk_url} target="_blank" className="flex items-center gap-2 text-primary hover:underline"><ExternalLink className="w-3 h-3" /> Bukti Struk</a>}
+                          <div className="flex items-center justify-center gap-1">
+                            <Dialog>
+                              <DialogTrigger asChild>
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon"
+                                  onClick={() => setSelectedSubmission(sub)}
+                                >
+                                  <Eye className="w-4 h-4" />
+                                </Button>
+                              </DialogTrigger>
+                              <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                                <DialogHeader>
+                                  <DialogTitle>Detail Pengajuan</DialogTitle>
+                                </DialogHeader>
+                                {selectedSubmission && (
+                                  <div className="space-y-4">
+                                    <div className="grid grid-cols-2 gap-4 text-sm">
+                                      <div><span className="text-muted-foreground">Nama:</span> <strong>{selectedSubmission.full_name}</strong></div>
+                                      <div><span className="text-muted-foreground">Email:</span> <strong>{selectedSubmission.email}</strong></div>
+                                      <div><span className="text-muted-foreground">Telepon:</span> <strong>{selectedSubmission.phone || "-"}</strong></div>
+                                      <div><span className="text-muted-foreground">Kategori:</span> <strong className="capitalize">{categoryConfig[selectedSubmission.category]?.label}</strong></div>
+                                      <div><span className="text-muted-foreground">Status Pendaftar:</span> <strong className="capitalize">{selectedSubmission.applicant_status?.replace("_", " ")}</strong></div>
+                                      <div><span className="text-muted-foreground">Institusi:</span> <strong>{selectedSubmission.institution_name || "-"}</strong></div>
+                                      <div><span className="text-muted-foreground">Kode Token:</span> <code className="text-xs bg-muted px-2 py-1 rounded font-mono">{selectedSubmission.token_code}</code></div>
+                                      <div><span className="text-muted-foreground">Status:</span> <Badge variant={statusConfig[selectedSubmission.status]?.variant}>{statusConfig[selectedSubmission.status]?.label}</Badge></div>
+                                      {selectedSubmission.verified_by_name && (
+                                        <div className="col-span-2">
+                                          <span className="text-muted-foreground">Dikoreksi oleh:</span>{" "}
+                                          <strong>{selectedSubmission.verified_by_name}</strong>
+                                          {selectedSubmission.verified_at && (
+                                            <span className="text-muted-foreground ml-2">
+                                              ({new Date(selectedSubmission.verified_at).toLocaleString("id-ID")})
+                                            </span>
+                                          )}
+                                        </div>
+                                      )}
                                     </div>
-                                    {selectedSubmission.essay && (
-                                      <div className="mt-4">
-                                        <h4 className="font-semibold mb-2">Esai</h4>
-                                        <p className="text-sm bg-muted p-4 rounded-lg whitespace-pre-wrap">{selectedSubmission.essay}</p>
+                                    <hr />
+                                    <div className="space-y-2">
+                                      <h4 className="font-semibold">Berkas</h4>
+                                      <div className="grid gap-2 text-sm">
+                                        {selectedSubmission.kartu_pelajar_url && <a href={selectedSubmission.kartu_pelajar_url} target="_blank" className="flex items-center gap-2 text-primary hover:underline"><ExternalLink className="w-3 h-3" /> Kartu Pelajar</a>}
+                                        {selectedSubmission.ktm_url && <a href={selectedSubmission.ktm_url} target="_blank" className="flex items-center gap-2 text-primary hover:underline"><ExternalLink className="w-3 h-3" /> KTM</a>}
+                                        {selectedSubmission.cv_url && <a href={selectedSubmission.cv_url} target="_blank" className="flex items-center gap-2 text-primary hover:underline"><ExternalLink className="w-3 h-3" /> CV</a>}
+                                        {selectedSubmission.sertifikat_prestasi_url && <a href={selectedSubmission.sertifikat_prestasi_url} target="_blank" className="flex items-center gap-2 text-primary hover:underline"><ExternalLink className="w-3 h-3" /> Sertifikat Prestasi</a>}
+                                        {selectedSubmission.transkrip_nilai_url && <a href={selectedSubmission.transkrip_nilai_url} target="_blank" className="flex items-center gap-2 text-primary hover:underline"><ExternalLink className="w-3 h-3" /> Transkrip Nilai</a>}
+                                        {selectedSubmission.khs_url && <a href={selectedSubmission.khs_url} target="_blank" className="flex items-center gap-2 text-primary hover:underline"><ExternalLink className="w-3 h-3" /> KHS</a>}
+                                        {selectedSubmission.bukti_penghasilan_url && <a href={selectedSubmission.bukti_penghasilan_url} target="_blank" className="flex items-center gap-2 text-primary hover:underline"><ExternalLink className="w-3 h-3" /> Bukti Penghasilan</a>}
+                                        {selectedSubmission.bukti_listrik_url && <a href={selectedSubmission.bukti_listrik_url} target="_blank" className="flex items-center gap-2 text-primary hover:underline"><ExternalLink className="w-3 h-3" /> Bukti Listrik</a>}
+                                        {selectedSubmission.surat_keterangan_yatim_url && <a href={selectedSubmission.surat_keterangan_yatim_url} target="_blank" className="flex items-center gap-2 text-primary hover:underline"><ExternalLink className="w-3 h-3" /> Surat Keterangan Yatim</a>}
+                                        {selectedSubmission.sktm_url && <a href={selectedSubmission.sktm_url} target="_blank" className="flex items-center gap-2 text-primary hover:underline"><ExternalLink className="w-3 h-3" /> SKTM</a>}
+                                        {selectedSubmission.berkas_pendukung_url && <a href={selectedSubmission.berkas_pendukung_url} target="_blank" className="flex items-center gap-2 text-primary hover:underline"><ExternalLink className="w-3 h-3" /> Berkas Pendukung</a>}
+                                        {selectedSubmission.bukti_struk_url && <a href={selectedSubmission.bukti_struk_url} target="_blank" className="flex items-center gap-2 text-primary hover:underline"><ExternalLink className="w-3 h-3" /> Bukti Struk</a>}
                                       </div>
-                                    )}
-                                    {selectedSubmission.video_tiktok_url && (
-                                      <div className="mt-4">
-                                        <h4 className="font-semibold mb-2">Video TikTok</h4>
-                                        <a href={selectedSubmission.video_tiktok_url} target="_blank" className="text-primary hover:underline">{selectedSubmission.video_tiktok_url}</a>
-                                      </div>
-                                    )}
+                                      {selectedSubmission.essay && (
+                                        <div className="mt-4">
+                                          <h4 className="font-semibold mb-2">Esai</h4>
+                                          <p className="text-sm bg-muted p-4 rounded-lg whitespace-pre-wrap">{selectedSubmission.essay}</p>
+                                        </div>
+                                      )}
+                                      {selectedSubmission.video_tiktok_url && (
+                                        <div className="mt-4">
+                                          <h4 className="font-semibold mb-2">Video TikTok</h4>
+                                          <a href={selectedSubmission.video_tiktok_url} target="_blank" className="text-primary hover:underline">{selectedSubmission.video_tiktok_url}</a>
+                                        </div>
+                                      )}
+                                    </div>
+                                    <hr />
+                                    <div className="flex gap-2">
+                                      <Button 
+                                        variant="success" 
+                                        onClick={() => updateStatus(selectedSubmission.id, "diverifikasi")}
+                                        disabled={selectedSubmission.status === "diverifikasi"}
+                                      >
+                                        <CheckCircle className="w-4 h-4 mr-2" /> Verifikasi
+                                      </Button>
+                                      <Button 
+                                        variant="destructive" 
+                                        onClick={() => updateStatus(selectedSubmission.id, "ditolak")}
+                                        disabled={selectedSubmission.status === "ditolak"}
+                                      >
+                                        <XCircle className="w-4 h-4 mr-2" /> Tolak
+                                      </Button>
+                                    </div>
                                   </div>
-                                  <hr />
-                                  <div className="flex gap-2">
-                                    <Button 
-                                      variant="success" 
-                                      onClick={() => updateStatus(selectedSubmission.id, "diverifikasi")}
-                                      disabled={selectedSubmission.status === "diverifikasi"}
-                                    >
-                                      <CheckCircle className="w-4 h-4 mr-2" /> Verifikasi
-                                    </Button>
-                                    <Button 
-                                      variant="destructive" 
-                                      onClick={() => updateStatus(selectedSubmission.id, "ditolak")}
-                                      disabled={selectedSubmission.status === "ditolak"}
-                                    >
-                                      <XCircle className="w-4 h-4 mr-2" /> Tolak
-                                    </Button>
-                                  </div>
-                                </div>
-                              )}
-                            </DialogContent>
-                          </Dialog>
+                                )}
+                              </DialogContent>
+                            </Dialog>
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Hapus Pengajuan?</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Pengajuan dari <strong>{sub.full_name}</strong> akan dihapus permanen. Tindakan ini tidak dapat dibatalkan.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Batal</AlertDialogCancel>
+                                  <AlertDialogAction
+                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                    onClick={() => deleteSubmissions([sub.id])}
+                                  >
+                                    Hapus
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </div>
                         </TableCell>
                       </TableRow>
                     );
