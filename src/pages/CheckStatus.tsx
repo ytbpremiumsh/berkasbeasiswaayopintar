@@ -140,9 +140,9 @@ const CheckStatus = () => {
             <div className="w-16 h-16 mx-auto mb-4 rounded-2xl gradient-primary flex items-center justify-center">
               <Search className="w-8 h-8 text-white" />
             </div>
-            <h1 className="text-3xl font-bold text-foreground mb-2">Cek Status Pengiriman</h1>
+            <h1 className="text-3xl font-bold text-foreground mb-2">Cek Status Administrasi</h1>
             <p className="text-muted-foreground">
-              Masukkan kode token untuk mengecek status pengiriman berkas beasiswa Anda
+              Masukkan kode token untuk mengecek status administrasi berkas beasiswa Anda
             </p>
           </div>
 
@@ -235,18 +235,17 @@ const CheckStatus = () => {
                           <span className="font-medium">{categoryLabels[result.submission?.category] || result.submission?.category}</span>
                         </div>
                         <div className="flex justify-between text-sm">
-                          <span className="text-muted-foreground">Status:</span>
-                          <span className={`font-medium ${statusConfig[result.submission?.status as SubmissionStatus]?.color || ""}`}>
-                            {statusConfig[result.submission?.status as SubmissionStatus]?.label || result.submission?.status}
-                          </span>
-                        </div>
-                        <div className="flex justify-between text-sm">
-                          <span className="text-muted-foreground">Tanggal Kirim:</span>
+                          <span className="text-muted-foreground">Tanggal & Waktu Kirim:</span>
                           <span className="font-medium">
                             {new Date(result.submission?.submitted_at).toLocaleDateString("id-ID", {
                               day: "numeric",
                               month: "long",
                               year: "numeric",
+                            })}{" "}
+                            {new Date(result.submission?.submitted_at).toLocaleTimeString("id-ID", {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                              second: "2-digit",
                             })}
                           </span>
                         </div>
