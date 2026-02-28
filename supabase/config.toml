@@ -1,16 +1,1 @@
-project_id = "mpesimipnconszxmicsr"
-
-[functions.manage-accounts]
-verify_jwt = false
-
-[functions.mayar-api]
-verify_jwt = false
-
-[functions.submit-scholarship]
-verify_jwt = false
-
-[functions.verify-license]
-verify_jwt = false
-
-[functions.shortlink-redirect]
-verify_jwt = false
+project_id = "qdrirujodheglkocjmui"
