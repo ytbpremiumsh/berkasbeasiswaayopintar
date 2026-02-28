@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Trophy, Heart, Wallet, Globe, Save, Loader2, Eye } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Switch } from "@/components/ui/switch";
 
 type ScholarshipCategory = "prestasi" | "yatim" | "ekonomi" | "umum";
 
@@ -252,6 +253,19 @@ export function SuccessTemplatesManager() {
                             placeholder="/"
                           />
                         </div>
+                      </div>
+
+                      <div className="flex items-center justify-between rounded-lg border p-4">
+                        <div className="space-y-0.5">
+                          <label className="text-sm font-medium">Status Template</label>
+                          <p className="text-xs text-muted-foreground">
+                            {template.is_active ? "Template aktif dan ditampilkan" : "Template nonaktif dan tidak ditampilkan"}
+                          </p>
+                        </div>
+                        <Switch
+                          checked={template.is_active}
+                          onCheckedChange={(checked) => updateTemplate(cat, "is_active", checked)}
+                        />
                       </div>
 
                       <div className="flex gap-3 pt-4">
