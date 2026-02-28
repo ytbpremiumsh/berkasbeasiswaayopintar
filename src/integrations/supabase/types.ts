@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.4"
+    PostgrestVersion: "14.1"
   }
   public: {
     Tables: {
@@ -61,6 +61,39 @@ export type Database = {
           id?: string
           is_active?: boolean
           placement_key?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      banners: {
+        Row: {
+          created_at: string
+          display_order: number
+          id: string
+          image_url: string
+          is_active: boolean
+          link_url: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          display_order?: number
+          id?: string
+          image_url: string
+          is_active?: boolean
+          link_url?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          display_order?: number
+          id?: string
+          image_url?: string
+          is_active?: boolean
+          link_url?: string | null
+          title?: string
           updated_at?: string
         }
         Relationships: []
@@ -139,6 +172,7 @@ export type Database = {
           full_name: string | null
           id: string
           is_active: boolean
+          is_approved: boolean
           role: Database["public"]["Enums"]["app_role"]
           updated_at: string
           user_id: string
@@ -150,6 +184,7 @@ export type Database = {
           full_name?: string | null
           id?: string
           is_active?: boolean
+          is_approved?: boolean
           role?: Database["public"]["Enums"]["app_role"]
           updated_at?: string
           user_id: string
@@ -161,6 +196,7 @@ export type Database = {
           full_name?: string | null
           id?: string
           is_active?: boolean
+          is_approved?: boolean
           role?: Database["public"]["Enums"]["app_role"]
           updated_at?: string
           user_id?: string
@@ -208,6 +244,7 @@ export type Database = {
           essay: string | null
           full_name: string
           id: string
+          institution_name: string | null
           kartu_pelajar_url: string | null
           khs_url: string | null
           ktm_url: string | null
@@ -221,6 +258,8 @@ export type Database = {
           transkrip_nilai_url: string | null
           updated_at: string
           user_id: string
+          verified_at: string | null
+          verified_by: string | null
           video_tiktok_url: string | null
         }
         Insert: {
@@ -236,6 +275,7 @@ export type Database = {
           essay?: string | null
           full_name: string
           id?: string
+          institution_name?: string | null
           kartu_pelajar_url?: string | null
           khs_url?: string | null
           ktm_url?: string | null
@@ -249,6 +289,8 @@ export type Database = {
           transkrip_nilai_url?: string | null
           updated_at?: string
           user_id: string
+          verified_at?: string | null
+          verified_by?: string | null
           video_tiktok_url?: string | null
         }
         Update: {
@@ -264,6 +306,7 @@ export type Database = {
           essay?: string | null
           full_name?: string
           id?: string
+          institution_name?: string | null
           kartu_pelajar_url?: string | null
           khs_url?: string | null
           ktm_url?: string | null
@@ -277,6 +320,8 @@ export type Database = {
           transkrip_nilai_url?: string | null
           updated_at?: string
           user_id?: string
+          verified_at?: string | null
+          verified_by?: string | null
           video_tiktok_url?: string | null
         }
         Relationships: [
@@ -316,6 +361,92 @@ export type Database = {
           token_code?: string
           used_at?: string | null
           used_by?: string | null
+        }
+        Relationships: []
+      }
+      shortlink_visits: {
+        Row: {
+          browser: string | null
+          city: string | null
+          country: string | null
+          device_type: string | null
+          id: string
+          ip_address: string | null
+          os: string | null
+          referrer: string | null
+          shortlink_id: string
+          user_agent: string | null
+          visited_at: string
+        }
+        Insert: {
+          browser?: string | null
+          city?: string | null
+          country?: string | null
+          device_type?: string | null
+          id?: string
+          ip_address?: string | null
+          os?: string | null
+          referrer?: string | null
+          shortlink_id: string
+          user_agent?: string | null
+          visited_at?: string
+        }
+        Update: {
+          browser?: string | null
+          city?: string | null
+          country?: string | null
+          device_type?: string | null
+          id?: string
+          ip_address?: string | null
+          os?: string | null
+          referrer?: string | null
+          shortlink_id?: string
+          user_agent?: string | null
+          visited_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shortlink_visits_shortlink_id_fkey"
+            columns: ["shortlink_id"]
+            isOneToOne: false
+            referencedRelation: "shortlinks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shortlinks: {
+        Row: {
+          click_count: number
+          created_at: string
+          created_by: string | null
+          destination_url: string
+          id: string
+          is_active: boolean
+          slug: string
+          title: string | null
+          updated_at: string
+        }
+        Insert: {
+          click_count?: number
+          created_at?: string
+          created_by?: string | null
+          destination_url: string
+          id?: string
+          is_active?: boolean
+          slug: string
+          title?: string | null
+          updated_at?: string
+        }
+        Update: {
+          click_count?: number
+          created_at?: string
+          created_by?: string | null
+          destination_url?: string
+          id?: string
+          is_active?: boolean
+          slug?: string
+          title?: string | null
+          updated_at?: string
         }
         Relationships: []
       }
@@ -378,6 +509,47 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      whatsapp_logs: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          id: string
+          message: string
+          recipient_name: string | null
+          recipient_phone: string
+          status: string
+          submission_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          message: string
+          recipient_name?: string | null
+          recipient_phone: string
+          status?: string
+          submission_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          message?: string
+          recipient_name?: string | null
+          recipient_phone?: string
+          status?: string
+          submission_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_logs_submission_id_fkey"
+            columns: ["submission_id"]
+            isOneToOne: false
+            referencedRelation: "scholarship_submissions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {

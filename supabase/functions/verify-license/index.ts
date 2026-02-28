@@ -16,7 +16,7 @@ serve(async (req) => {
   }
 
   try {
-    const { licenseCode, category } = await req.json();
+    const { licenseCode, category, checkOnly } = await req.json();
 
     if (!licenseCode) {
       return new Response(
@@ -24,6 +24,9 @@ serve(async (req) => {
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+
+    // For checkOnly mode (status check), we don't need a category
+    const useCategory = category || "umum";
 
     // Get Supabase client to read API key from admin_settings
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -47,7 +50,7 @@ serve(async (req) => {
       );
     }
 
-    console.log(`Verifying license code: ${licenseCode} for category: ${category}`);
+    console.log(`Verifying license code: ${licenseCode} for category: ${useCategory} (checkOnly: ${checkOnly})`);
 
     // Call Mayar API to verify license
     const mayarResponse = await fetch(MAYAR_API_URL, {
@@ -145,12 +148,27 @@ serve(async (req) => {
         );
       }
     } else {
+      // For checkOnly mode, just return valid without creating a token
+      if (checkOnly) {
+        console.log(`License verified (checkOnly mode). No token created.`);
+        return new Response(
+          JSON.stringify({ 
+            valid: true, 
+            tokenId: null,
+            customerName: licenseData.customerName,
+            customerEmail: licenseData.customerEmail,
+            message: "Kode token valid" 
+          }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
       // Create new token record
       const { data: newToken, error: insertError } = await supabase
         .from("scholarship_tokens")
         .insert({
           token_code: licenseCode.trim().toUpperCase(),
-          category: category,
+          category: useCategory,
           status: "valid",
         })
         .select()

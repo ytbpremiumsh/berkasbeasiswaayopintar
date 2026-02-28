@@ -59,6 +59,24 @@ export function SuccessTemplatesManager() {
         umum: null,
       };
 
+      // Default template structure
+      const defaultTemplate = (cat: ScholarshipCategory): SuccessTemplate => ({
+        id: "",
+        category: cat,
+        title: "Berkas Terkirim!",
+        description: `Pengajuan beasiswa ${cat} Anda telah berhasil dikirim. Tim kami akan memverifikasi berkas Anda dalam waktu 3-7 hari kerja.`,
+        note: "Kami akan mengirimkan notifikasi melalui WhatsApp dan email setelah proses verifikasi selesai.",
+        button_text: "Kembali ke Beranda",
+        button_link: "/",
+        is_active: true,
+      });
+
+      // First fill with defaults
+      (Object.keys(templatesMap) as ScholarshipCategory[]).forEach((cat) => {
+        templatesMap[cat] = defaultTemplate(cat);
+      });
+
+      // Then override with database values
       data?.forEach((template) => {
         const cat = template.category as ScholarshipCategory;
         if (templatesMap.hasOwnProperty(cat)) {
@@ -88,20 +106,44 @@ export function SuccessTemplatesManager() {
 
     setIsSaving(category);
     try {
-      const { error } = await supabase
+      // Check if template exists in database
+      const { data: existing } = await supabase
         .from("success_templates")
-        .upsert({
-          id: template.id,
-          category,
-          title: template.title,
-          description: template.description,
-          note: template.note,
-          button_text: template.button_text,
-          button_link: template.button_link,
-          is_active: template.is_active,
-        }, { onConflict: "category" });
+        .select("id")
+        .eq("category", category)
+        .maybeSingle();
 
-      if (error) throw error;
+      if (existing) {
+        // Update existing
+        const { error } = await supabase
+          .from("success_templates")
+          .update({
+            title: template.title,
+            description: template.description,
+            note: template.note,
+            button_text: template.button_text,
+            button_link: template.button_link,
+            is_active: template.is_active,
+          })
+          .eq("category", category);
+
+        if (error) throw error;
+      } else {
+        // Insert new
+        const { error } = await supabase
+          .from("success_templates")
+          .insert({
+            category,
+            title: template.title,
+            description: template.description,
+            note: template.note,
+            button_text: template.button_text,
+            button_link: template.button_link,
+            is_active: template.is_active,
+          });
+
+        if (error) throw error;
+      }
 
       toast({ title: "Template berhasil disimpan" });
       fetchTemplates();

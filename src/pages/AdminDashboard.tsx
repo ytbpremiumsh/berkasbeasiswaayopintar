@@ -18,6 +18,15 @@ import { DuplicateSubmissions } from "@/components/admin/DuplicateSubmissions";
 import { VerifiedSubmissions } from "@/components/admin/VerifiedSubmissions";
 import { StaffManager } from "@/components/admin/StaffManager";
 import { AdsenseManager } from "@/components/admin/AdsenseManager";
+import { MayarDashboard } from "@/components/admin/MayarDashboard";
+import { PendingSubmissions } from "@/components/admin/PendingSubmissions";
+import { BannerManager } from "@/components/admin/BannerManager";
+import { ShortlinkManager } from "@/components/admin/ShortlinkManager";
+import { AllSubmissions } from "@/components/admin/AllSubmissions";
+import { CountdownManager } from "@/components/admin/CountdownManager";
+import { WhatsAppSettings } from "@/components/admin/WhatsAppSettings";
+import { AdminSettings } from "@/components/admin/AdminSettings";
+import { EmbedManager } from "@/components/admin/EmbedManager";
 import * as XLSX from "xlsx";
 import { cn } from "@/lib/utils";
 import { 
@@ -55,6 +64,7 @@ const AdminDashboard = () => {
   const [newTokenCode, setNewTokenCode] = useState("");
   const [newTokenCategory, setNewTokenCategory] = useState<ScholarshipCategory>("prestasi");
   const [isAddingToken, setIsAddingToken] = useState(false);
+  const [userRole, setUserRole] = useState<"admin" | "staff" | null>(null);
   
   // Settings
   const [oneSenderApiUrl, setOneSenderApiUrl] = useState("");
@@ -72,28 +82,46 @@ const AdminDashboard = () => {
   });
 
   useEffect(() => {
-    checkAdminAccess();
+    checkAccess();
     fetchData();
   }, []);
 
-  const checkAdminAccess = async () => {
+  const checkAccess = async () => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) {
       navigate("/admin/login");
       return;
     }
 
-    const { data: role } = await supabase
+    // Check for admin role first
+    const { data: adminRole } = await supabase
       .from("user_roles")
       .select("role")
       .eq("user_id", session.user.id)
       .eq("role", "admin")
       .maybeSingle();
 
-    if (!role) {
-      toast({ title: "Akses ditolak", description: "Anda bukan admin", variant: "destructive" });
-      navigate("/");
+    if (adminRole) {
+      setUserRole("admin");
+      return;
     }
+
+    // Check for staff role
+    const { data: staffRole } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", session.user.id)
+      .eq("role", "staff")
+      .maybeSingle();
+
+    if (staffRole) {
+      setUserRole("staff");
+      return;
+    }
+
+    // Not admin or staff
+    toast({ title: "Akses ditolak", description: "Anda tidak memiliki akses", variant: "destructive" });
+    navigate("/");
   };
 
   const fetchData = async () => {
@@ -101,7 +129,10 @@ const AdminDashboard = () => {
     try {
       const { data: subs, error: subsError } = await supabase
         .from("scholarship_submissions")
-        .select("*")
+        .select(`
+          *,
+          scholarship_tokens!token_id (token_code)
+        `)
         .order("submitted_at", { ascending: false });
 
       if (subsError) throw subsError;
@@ -163,9 +194,20 @@ const AdminDashboard = () => {
 
   const updateSubmissionStatus = async (id: string, status: SubmissionStatus) => {
     try {
+      // Get current user for tracking who verified
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      const updateData: any = { status };
+      
+      // If status is diverifikasi or ditolak, track who verified and when
+      if (status === "diverifikasi" || status === "ditolak") {
+        updateData.verified_by = user?.id;
+        updateData.verified_at = new Date().toISOString();
+      }
+      
       const { error } = await supabase
         .from("scholarship_submissions")
-        .update({ status })
+        .update(updateData)
         .eq("id", id);
 
       if (error) throw error;
@@ -224,6 +266,7 @@ const AdminDashboard = () => {
       "Email": sub.email,
       "Telepon": sub.phone || "-",
       "Status Pendaftar": sub.applicant_status?.replace("_", " ") || "-",
+      "Universitas/Sekolah": sub.institution_name || "-",
       "Status": statusLabels[sub.status as SubmissionStatus]?.label || sub.status,
       "Tanggal Submit": new Date(sub.submitted_at).toLocaleDateString("id-ID"),
       "Kartu Pelajar": sub.kartu_pelajar_url || "-",
@@ -283,6 +326,7 @@ const AdminDashboard = () => {
           onLogout={handleLogout}
           isCollapsed={sidebarCollapsed}
           onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
+          userRole={userRole}
         />
       </div>
 
@@ -301,7 +345,7 @@ const AdminDashboard = () => {
         {sidebarOpen && (
           <div className="lg:hidden fixed inset-0 z-50 bg-background/80 backdrop-blur-sm" onClick={() => setSidebarOpen(false)}>
             <div className="fixed left-0 top-0 h-full" onClick={e => e.stopPropagation()}>
-              <AdminSidebar activeTab={activeTab} onTabChange={(tab) => { setActiveTab(tab); setSidebarOpen(false); }} onLogout={handleLogout} />
+              <AdminSidebar activeTab={activeTab} onTabChange={(tab) => { setActiveTab(tab); setSidebarOpen(false); }} onLogout={handleLogout} userRole={userRole} />
             </div>
           </div>
         )}
@@ -447,7 +491,9 @@ const AdminDashboard = () => {
                       <TableHeader>
                         <TableRow>
                           <TableHead>Nama</TableHead>
+                          <TableHead>Kode Token</TableHead>
                           <TableHead>Status Pendaftar</TableHead>
+                          <TableHead>Universitas/Sekolah</TableHead>
                           <TableHead>Status</TableHead>
                           <TableHead>Tanggal</TableHead>
                           <TableHead>Aksi</TableHead>
@@ -464,7 +510,15 @@ const AdminDashboard = () => {
                                   <p className="text-xs text-muted-foreground">{sub.email}</p>
                                 </div>
                               </TableCell>
+                              <TableCell>
+                                <code className="text-xs bg-muted px-2 py-1 rounded font-mono">
+                                  {sub.scholarship_tokens?.token_code || "-"}
+                                </code>
+                              </TableCell>
                               <TableCell className="capitalize">{sub.applicant_status?.replace("_", " ")}</TableCell>
+                              <TableCell>
+                                <span className="text-sm">{sub.institution_name || "-"}</span>
+                              </TableCell>
                               <TableCell>
                                 <Badge variant={stat.variant}>{stat.label}</Badge>
                               </TableCell>
@@ -488,6 +542,8 @@ const AdminDashboard = () => {
                                           <div><span className="text-muted-foreground">Telepon:</span> <strong>{selectedSubmission.phone || "-"}</strong></div>
                                           <div><span className="text-muted-foreground">Kategori:</span> <strong className="capitalize">{selectedSubmission.category}</strong></div>
                                           <div><span className="text-muted-foreground">Status Pendaftar:</span> <strong className="capitalize">{selectedSubmission.applicant_status?.replace("_", " ")}</strong></div>
+                                          <div><span className="text-muted-foreground">{selectedSubmission.applicant_status === "mahasiswa" ? "Universitas" : "Sekolah"}:</span> <strong>{selectedSubmission.institution_name || "-"}</strong></div>
+                                          <div><span className="text-muted-foreground">Kode Token:</span> <code className="text-xs bg-muted px-2 py-1 rounded font-mono">{selectedSubmission.scholarship_tokens?.token_code || "-"}</code></div>
                                         </div>
                                         <hr />
                                         <div className="space-y-2">
@@ -641,64 +697,37 @@ const AdminDashboard = () => {
           {activeTab === "verified" && <VerifiedSubmissions />}
 
           {/* Settings */}
-          {activeTab === "settings" && (
-            <div className="space-y-6">
-              <div>
-                <h1 className="text-2xl font-bold text-foreground">Pengaturan</h1>
-                <p className="text-muted-foreground">Konfigurasi API dan integrasi</p>
-              </div>
-
-              <div className="grid gap-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Pengaturan Mayar API</CardTitle>
-                    <CardDescription>Konfigurasi API Key Mayar untuk validasi token beasiswa</CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">API Key Mayar</label>
-                      <Input type="password" placeholder="Masukkan API Key Mayar" value={mayarApiKey} onChange={(e) => setMayarApiKey(e.target.value)} />
-                      <p className="text-xs text-muted-foreground">API Key ini digunakan untuk memvalidasi kode token dari Mayar</p>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Pengaturan OneSender (WhatsApp)</CardTitle>
-                    <CardDescription>Konfigurasi integrasi WhatsApp untuk notifikasi otomatis</CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">API URL OneSender</label>
-                      <Input placeholder="https://api.onesender.com/v1/send" value={oneSenderApiUrl} onChange={(e) => setOneSenderApiUrl(e.target.value)} />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">API Key OneSender</label>
-                      <Input type="password" placeholder="Masukkan API Key" value={oneSenderApiKey} onChange={(e) => setOneSenderApiKey(e.target.value)} />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Nomor Pengirim</label>
-                      <Input placeholder="628xxxxxxxxxx" value={oneSenderPhone} onChange={(e) => setOneSenderPhone(e.target.value)} />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Template Pesan WhatsApp</label>
-                      <p className="text-xs text-muted-foreground">Variabel: {"{{nama}}, {{kategori_beasiswa}}, {{status_pendaftar}}, {{tanggal_submit}}"}</p>
-                      <Textarea placeholder="Contoh: Halo {{nama}}, pengajuan beasiswa {{kategori_beasiswa}} Anda telah diterima..." value={whatsappTemplate} onChange={(e) => setWhatsappTemplate(e.target.value)} className="min-h-[120px]" />
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Button onClick={saveSettings} className="w-full sm:w-auto">Simpan Semua Pengaturan</Button>
-              </div>
-            </div>
-          )}
+          {activeTab === "settings" && <AdminSettings />}
 
           {/* Staff Management */}
           {activeTab === "staff" && <StaffManager />}
 
           {/* AdSense Management */}
           {activeTab === "adsense" && <AdsenseManager />}
+
+          {/* Mayar Dashboard */}
+          {activeTab === "mayar" && <MayarDashboard />}
+
+          {/* Pending Submissions */}
+          {activeTab === "pending-submissions" && <PendingSubmissions />}
+
+          {/* Banner Management */}
+          {activeTab === "banners" && <BannerManager />}
+
+          {/* Shortlink Management */}
+          {activeTab === "shortlinks" && <ShortlinkManager />}
+
+          {/* Countdown Management */}
+          {activeTab === "countdown" && <CountdownManager />}
+
+          {/* WhatsApp Settings */}
+          {activeTab === "whatsapp" && <WhatsAppSettings />}
+
+          {/* Embed Manager */}
+          {activeTab === "embed" && <EmbedManager />}
+
+          {/* All Submissions */}
+          {activeTab === "all-submissions" && <AllSubmissions onStatusUpdate={fetchData} />}
         </main>
       </div>
     </div>

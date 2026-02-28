@@ -5,7 +5,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Download, CheckCircle, Trophy, Heart, Wallet, Globe } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Loader2, Download, CheckCircle, Trophy, Heart, Wallet, Globe, Eye, ExternalLink } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import * as XLSX from "xlsx";
 
@@ -25,9 +26,29 @@ interface VerifiedSubmission {
   phone: string | null;
   category: ScholarshipCategory;
   applicant_status: string;
+  institution_name: string | null;
   token_id: string;
   token_code?: string;
   submitted_at: string;
+  verified_by: string | null;
+  verified_at: string | null;
+  // File URLs
+  kartu_pelajar_url: string | null;
+  ktm_url: string | null;
+  cv_url: string | null;
+  sertifikat_prestasi_url: string | null;
+  transkrip_nilai_url: string | null;
+  khs_url: string | null;
+  essay: string | null;
+  bukti_penghasilan_url: string | null;
+  bukti_listrik_url: string | null;
+  surat_keterangan_yatim_url: string | null;
+  sktm_url: string | null;
+  video_tiktok_url: string | null;
+  berkas_pendukung_url: string | null;
+  bukti_struk_url: string | null;
+  // Admin info
+  verified_by_name?: string;
 }
 
 export function VerifiedSubmissions() {
@@ -44,7 +65,14 @@ export function VerifiedSubmissions() {
     try {
       const { data: subs, error } = await supabase
         .from("scholarship_submissions")
-        .select("id, full_name, email, phone, category, applicant_status, token_id, submitted_at")
+        .select(`
+          id, full_name, email, phone, category, applicant_status, institution_name,
+          token_id, submitted_at, verified_by, verified_at,
+          kartu_pelajar_url, ktm_url, cv_url, sertifikat_prestasi_url,
+          transkrip_nilai_url, khs_url, essay, bukti_penghasilan_url,
+          bukti_listrik_url, surat_keterangan_yatim_url, sktm_url,
+          video_tiktok_url, berkas_pendukung_url, bukti_struk_url
+        `)
         .eq("status", "diverifikasi")
         .order("submitted_at", { ascending: false });
 
@@ -57,13 +85,23 @@ export function VerifiedSubmissions() {
 
       const tokenMap = new Map(tokens?.map(t => [t.id, t.token_code]) || []);
 
-      // Add token_code to submissions
-      const subsWithTokens = subs?.map(s => ({
+      // Get admin profiles for verified_by names
+      const verifiedByIds = subs?.map(s => s.verified_by).filter(Boolean) || [];
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("id, full_name, email")
+        .in("id", verifiedByIds);
+
+      const profileMap = new Map(profiles?.map(p => [p.id, p.full_name || p.email]) || []);
+
+      // Add token_code and verified_by_name to submissions
+      const subsWithDetails = subs?.map(s => ({
         ...s,
-        token_code: tokenMap.get(s.token_id) || "Unknown"
+        token_code: tokenMap.get(s.token_id) || "Unknown",
+        verified_by_name: s.verified_by ? profileMap.get(s.verified_by) || "Admin" : undefined
       })) || [];
 
-      setSubmissions(subsWithTokens as VerifiedSubmission[]);
+      setSubmissions(subsWithDetails as VerifiedSubmission[]);
     } catch (error) {
       console.error("Error fetching verified:", error);
     } finally {
@@ -87,8 +125,26 @@ export function VerifiedSubmissions() {
       "Telepon": sub.phone || "-",
       "Kategori": categoryConfig[sub.category]?.label || sub.category,
       "Status Pendaftar": sub.applicant_status?.replace("_", " ") || "-",
+      "Universitas/Sekolah": sub.institution_name || "-",
       "Kode Token": sub.token_code,
       "Tanggal Submit": new Date(sub.submitted_at).toLocaleDateString("id-ID"),
+      "Diverifikasi Oleh": sub.verified_by_name || "-",
+      "Tanggal Verifikasi": sub.verified_at ? new Date(sub.verified_at).toLocaleDateString("id-ID") : "-",
+      // File URLs
+      "Kartu Pelajar": sub.kartu_pelajar_url || "-",
+      "KTM": sub.ktm_url || "-",
+      "CV": sub.cv_url || "-",
+      "Sertifikat Prestasi": sub.sertifikat_prestasi_url || "-",
+      "Transkrip Nilai": sub.transkrip_nilai_url || "-",
+      "KHS": sub.khs_url || "-",
+      "Esai": sub.essay ? sub.essay.substring(0, 500) : "-",
+      "Bukti Penghasilan": sub.bukti_penghasilan_url || "-",
+      "Bukti Listrik": sub.bukti_listrik_url || "-",
+      "Surat Keterangan Yatim": sub.surat_keterangan_yatim_url || "-",
+      "SKTM": sub.sktm_url || "-",
+      "Video TikTok": sub.video_tiktok_url || "-",
+      "Berkas Pendukung": sub.berkas_pendukung_url || "-",
+      "Bukti Struk": sub.bukti_struk_url || "-",
     }));
 
     const ws = XLSX.utils.json_to_sheet(exportData);
@@ -97,7 +153,7 @@ export function VerifiedSubmissions() {
     XLSX.utils.book_append_sheet(wb, ws, `Terverifikasi - ${sheetName}`);
     XLSX.writeFile(wb, `peserta_terverifikasi_${selectedCategory}_${new Date().toISOString().split("T")[0]}.xlsx`);
     
-    toast({ title: "Export berhasil", description: `${filteredSubmissions.length} data berhasil diexport` });
+    toast({ title: "Export berhasil", description: `${filteredSubmissions.length} data berhasil diexport dengan link berkas` });
   };
 
   const categoryCounts = {
@@ -197,11 +253,12 @@ export function VerifiedSubmissions() {
                     <TableHead>No</TableHead>
                     <TableHead>Nama</TableHead>
                     <TableHead>Email</TableHead>
-                    <TableHead>Telepon</TableHead>
                     <TableHead>Kategori</TableHead>
                     <TableHead>Status</TableHead>
+                    <TableHead>Korektor</TableHead>
                     <TableHead>Kode Token</TableHead>
-                    <TableHead>Tanggal Submit</TableHead>
+                    <TableHead>Tanggal</TableHead>
+                    <TableHead className="text-center">Aksi</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -213,7 +270,6 @@ export function VerifiedSubmissions() {
                         <TableCell>{idx + 1}</TableCell>
                         <TableCell className="font-medium">{sub.full_name}</TableCell>
                         <TableCell>{sub.email}</TableCell>
-                        <TableCell>{sub.phone || "-"}</TableCell>
                         <TableCell>
                           <Badge variant="outline" className="gap-1">
                             <Icon className="w-3 h-3" />
@@ -221,8 +277,87 @@ export function VerifiedSubmissions() {
                           </Badge>
                         </TableCell>
                         <TableCell className="capitalize">{sub.applicant_status?.replace("_", " ")}</TableCell>
+                        <TableCell>
+                          {sub.verified_by_name ? (
+                            <div className="text-sm">
+                              <p className="font-medium">{sub.verified_by_name}</p>
+                              {sub.verified_at && (
+                                <p className="text-xs text-muted-foreground">
+                                  {new Date(sub.verified_at).toLocaleDateString("id-ID")}
+                                </p>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground">-</span>
+                          )}
+                        </TableCell>
                         <TableCell className="font-mono text-xs bg-muted/50 rounded px-2">{sub.token_code}</TableCell>
                         <TableCell>{new Date(sub.submitted_at).toLocaleDateString("id-ID")}</TableCell>
+                        <TableCell>
+                          <Dialog>
+                            <DialogTrigger asChild>
+                              <Button variant="ghost" size="icon" title="Lihat Berkas">
+                                <Eye className="w-4 h-4" />
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                              <DialogHeader>
+                                <DialogTitle>Berkas: {sub.full_name}</DialogTitle>
+                              </DialogHeader>
+                              <div className="space-y-4">
+                                <div className="grid grid-cols-2 gap-4 text-sm">
+                                  <div><span className="text-muted-foreground">Nama:</span> <strong>{sub.full_name}</strong></div>
+                                  <div><span className="text-muted-foreground">Email:</span> <strong>{sub.email}</strong></div>
+                                  <div><span className="text-muted-foreground">Telepon:</span> <strong>{sub.phone || "-"}</strong></div>
+                                  <div><span className="text-muted-foreground">Kategori:</span> <strong>{catConfig?.label}</strong></div>
+                                  <div><span className="text-muted-foreground">Status:</span> <strong className="capitalize">{sub.applicant_status?.replace("_", " ")}</strong></div>
+                                  <div><span className="text-muted-foreground">Institusi:</span> <strong>{sub.institution_name || "-"}</strong></div>
+                                  {sub.verified_by_name && (
+                                    <div className="col-span-2">
+                                      <span className="text-muted-foreground">Diverifikasi oleh:</span>{" "}
+                                      <strong>{sub.verified_by_name}</strong>
+                                      {sub.verified_at && (
+                                        <span className="text-muted-foreground ml-2">
+                                          ({new Date(sub.verified_at).toLocaleString("id-ID")})
+                                        </span>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
+                                <hr />
+                                <div className="space-y-2">
+                                  <h4 className="font-semibold">Berkas</h4>
+                                  <div className="grid gap-2 text-sm">
+                                    {sub.kartu_pelajar_url && <a href={sub.kartu_pelajar_url} target="_blank" className="flex items-center gap-2 text-primary hover:underline"><ExternalLink className="w-3 h-3" /> Kartu Pelajar</a>}
+                                    {sub.ktm_url && <a href={sub.ktm_url} target="_blank" className="flex items-center gap-2 text-primary hover:underline"><ExternalLink className="w-3 h-3" /> KTM</a>}
+                                    {sub.cv_url && <a href={sub.cv_url} target="_blank" className="flex items-center gap-2 text-primary hover:underline"><ExternalLink className="w-3 h-3" /> CV</a>}
+                                    {sub.sertifikat_prestasi_url && <a href={sub.sertifikat_prestasi_url} target="_blank" className="flex items-center gap-2 text-primary hover:underline"><ExternalLink className="w-3 h-3" /> Sertifikat Prestasi</a>}
+                                    {sub.transkrip_nilai_url && <a href={sub.transkrip_nilai_url} target="_blank" className="flex items-center gap-2 text-primary hover:underline"><ExternalLink className="w-3 h-3" /> Transkrip Nilai</a>}
+                                    {sub.khs_url && <a href={sub.khs_url} target="_blank" className="flex items-center gap-2 text-primary hover:underline"><ExternalLink className="w-3 h-3" /> KHS</a>}
+                                    {sub.bukti_penghasilan_url && <a href={sub.bukti_penghasilan_url} target="_blank" className="flex items-center gap-2 text-primary hover:underline"><ExternalLink className="w-3 h-3" /> Bukti Penghasilan</a>}
+                                    {sub.bukti_listrik_url && <a href={sub.bukti_listrik_url} target="_blank" className="flex items-center gap-2 text-primary hover:underline"><ExternalLink className="w-3 h-3" /> Bukti Listrik</a>}
+                                    {sub.surat_keterangan_yatim_url && <a href={sub.surat_keterangan_yatim_url} target="_blank" className="flex items-center gap-2 text-primary hover:underline"><ExternalLink className="w-3 h-3" /> Surat Keterangan Yatim</a>}
+                                    {sub.sktm_url && <a href={sub.sktm_url} target="_blank" className="flex items-center gap-2 text-primary hover:underline"><ExternalLink className="w-3 h-3" /> SKTM</a>}
+                                    {sub.berkas_pendukung_url && <a href={sub.berkas_pendukung_url} target="_blank" className="flex items-center gap-2 text-primary hover:underline"><ExternalLink className="w-3 h-3" /> Berkas Pendukung</a>}
+                                    {sub.bukti_struk_url && <a href={sub.bukti_struk_url} target="_blank" className="flex items-center gap-2 text-primary hover:underline"><ExternalLink className="w-3 h-3" /> Bukti Struk</a>}
+                                  </div>
+                                  {sub.essay && (
+                                    <div className="mt-4">
+                                      <h4 className="font-semibold mb-2">Esai</h4>
+                                      <p className="text-sm bg-muted p-4 rounded-lg whitespace-pre-wrap">{sub.essay}</p>
+                                    </div>
+                                  )}
+                                  {sub.video_tiktok_url && (
+                                    <div className="mt-4">
+                                      <h4 className="font-semibold mb-2">Video TikTok</h4>
+                                      <a href={sub.video_tiktok_url} target="_blank" className="text-primary hover:underline">{sub.video_tiktok_url}</a>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            </DialogContent>
+                          </Dialog>
+                        </TableCell>
                       </TableRow>
                     );
                   })}

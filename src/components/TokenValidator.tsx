@@ -5,6 +5,7 @@ import { Loader2, CheckCircle, XCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { DocumentRequirements } from "./DocumentRequirements";
+import { AdsenseAd } from "./AdsenseAd";
 
 interface TokenValidatorProps {
   category: "prestasi" | "yatim" | "ekonomi" | "umum";
@@ -77,6 +78,9 @@ export function TokenValidator({ category, onValidToken, value }: TokenValidator
       {/* Document Preparation Notes - Now with clear separation by applicant type */}
       <DocumentRequirements category={category} />
 
+      {/* Ad before token input */}
+      <AdsenseAd placement="content_top" className="my-4" />
+
       {/* Token Input Section */}
       <div className="space-y-4">
         <div>
@@ -134,6 +138,9 @@ export function TokenValidator({ category, onValidToken, value }: TokenValidator
             Kode token tidak ditemukan atau tidak valid. Silakan klaim token terlebih dahulu.
           </p>
         )}
+
+        {/* Ad after validation button */}
+        <AdsenseAd placement="between_sections" className="mt-4" />
       </div>
     </div>
   );

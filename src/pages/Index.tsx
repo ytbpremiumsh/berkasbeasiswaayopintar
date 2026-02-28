@@ -1,6 +1,8 @@
 import { CategoryCard } from "@/components/CategoryCard";
 import { SimpleHeader } from "@/components/SimpleHeader";
 import { AdsenseAd } from "@/components/AdsenseAd";
+import { BannerCarousel } from "@/components/BannerCarousel";
+import { Countdown } from "@/components/Countdown";
 
 const Index = () => {
   const categories = [
@@ -13,6 +15,16 @@ const Index = () => {
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <SimpleHeader />
+      
+      {/* Banner Carousel */}
+      <div className="container mx-auto px-4 mt-6">
+        <BannerCarousel />
+      </div>
+      
+      {/* Countdown */}
+      <div className="container mx-auto px-4 mt-6">
+        <Countdown />
+      </div>
       
       {/* Header Ad */}
       <AdsenseAd placement="header" className="container mx-auto px-4 mt-4" />

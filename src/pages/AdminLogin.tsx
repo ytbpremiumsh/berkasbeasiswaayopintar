@@ -20,11 +20,12 @@ const AdminLogin = () => {
   const checkExistingSession = async () => {
     const { data: { session } } = await supabase.auth.getSession();
     if (session) {
+      // Check if user is admin or staff
       const { data: role } = await supabase
         .from("user_roles")
         .select("role")
         .eq("user_id", session.user.id)
-        .eq("role", "admin")
+        .in("role", ["admin", "staff"])
         .maybeSingle();
 
       if (role) {
@@ -41,20 +42,35 @@ const AdminLogin = () => {
       const { data, error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
 
-      // Check if user is admin
+      // Check if user is admin or staff
       const { data: role } = await supabase
         .from("user_roles")
         .select("role")
         .eq("user_id", data.user.id)
-        .eq("role", "admin")
+        .in("role", ["admin", "staff"])
         .maybeSingle();
 
       if (!role) {
         await supabase.auth.signOut();
-        throw new Error("Anda bukan admin. Akses ditolak.");
+        throw new Error("Anda bukan admin atau staff. Akses ditolak.");
       }
 
-      toast({ title: "Berhasil masuk", description: "Selamat datang, Admin!" });
+      // Check if account is approved (for staff)
+      if (role.role === "staff") {
+        const { data: account } = await supabase
+          .from("managed_accounts")
+          .select("is_approved")
+          .eq("user_id", data.user.id)
+          .maybeSingle();
+        
+        if (account && !account.is_approved) {
+          await supabase.auth.signOut();
+          throw new Error("Akun Anda belum disetujui oleh admin.");
+        }
+      }
+
+      const roleLabel = role.role === "admin" ? "Admin" : "Staff";
+      toast({ title: "Berhasil masuk", description: `Selamat datang, ${roleLabel}!` });
       navigate("/admin");
     } catch (error: any) {
       toast({ title: "Gagal masuk", description: error.message, variant: "destructive" });
@@ -70,8 +86,8 @@ const AdminLogin = () => {
           <div className="w-16 h-16 rounded-2xl gradient-primary flex items-center justify-center mx-auto mb-4">
             <Shield className="w-8 h-8 text-primary-foreground" />
           </div>
-          <CardTitle className="text-2xl">Login Admin</CardTitle>
-          <CardDescription>Masuk untuk mengakses dashboard admin</CardDescription>
+          <CardTitle className="text-2xl">Login Panel</CardTitle>
+          <CardDescription>Masuk untuk mengakses dashboard (Admin/Staff)</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleLogin} className="space-y-4">

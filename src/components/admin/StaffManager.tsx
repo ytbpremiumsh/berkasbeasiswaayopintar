@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Plus, Key, UserX, UserCheck, Trash2, Loader2, Users, Shield, UserCog } from "lucide-react";
+import { Plus, Key, UserX, UserCheck, Trash2, Loader2, Users, Shield, UserCog, CheckCircle, Clock } from "lucide-react";
 
 interface ManagedAccount {
   id: string;
@@ -19,6 +19,7 @@ interface ManagedAccount {
   full_name: string | null;
   role: "admin" | "staff" | "user";
   is_active: boolean;
+  is_approved: boolean;
   created_at: string;
 }
 
@@ -47,9 +48,11 @@ export function StaffManager() {
   const fetchAccounts = async () => {
     setIsLoading(true);
     try {
+      // Only fetch admin and staff accounts, not regular users
       const { data, error } = await supabase
         .from("managed_accounts")
         .select("*")
+        .in("role", ["admin", "staff"])
         .order("created_at", { ascending: false });
 
       if (error) throw error;
@@ -166,6 +169,26 @@ export function StaffManager() {
     }
   };
 
+  const approveAccount = async (account: ManagedAccount) => {
+    try {
+      const { error } = await supabase
+        .from("managed_accounts")
+        .update({ is_approved: true })
+        .eq("id", account.id);
+
+      if (error) throw error;
+
+      toast({ 
+        title: "Berhasil", 
+        description: `Akun ${account.email} telah disetujui` 
+      });
+      fetchAccounts();
+    } catch (error: any) {
+      console.error("Approve error:", error);
+      toast({ title: "Gagal menyetujui akun", description: error.message, variant: "destructive" });
+    }
+  };
+
   const deleteAccount = async (account: ManagedAccount) => {
     try {
       const response = await supabase.functions.invoke("manage-accounts", {
@@ -278,7 +301,7 @@ export function StaffManager() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
@@ -288,6 +311,19 @@ export function StaffManager() {
               <div>
                 <p className="text-2xl font-bold">{accounts.length}</p>
                 <p className="text-xs text-muted-foreground">Total Akun</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-amber-500/10 flex items-center justify-center">
+                <Clock className="w-5 h-5 text-amber-500" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold">{accounts.filter(a => !a.is_approved).length}</p>
+                <p className="text-xs text-muted-foreground">Menunggu Approval</p>
               </div>
             </div>
           </CardContent>
@@ -340,6 +376,7 @@ export function StaffManager() {
                     <TableHead>Email</TableHead>
                     <TableHead>Nama</TableHead>
                     <TableHead>Role</TableHead>
+                    <TableHead>Approval</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Dibuat</TableHead>
                     <TableHead className="text-right">Aksi</TableHead>
@@ -347,10 +384,21 @@ export function StaffManager() {
                 </TableHeader>
                 <TableBody>
                   {accounts.map((account) => (
-                    <TableRow key={account.id}>
+                    <TableRow key={account.id} className={!account.is_approved ? "bg-amber-500/5" : ""}>
                       <TableCell className="font-medium">{account.email}</TableCell>
                       <TableCell>{account.full_name || "-"}</TableCell>
                       <TableCell>{getRoleBadge(account.role)}</TableCell>
+                      <TableCell>
+                        {account.is_approved ? (
+                          <Badge className="bg-green-500/10 text-green-500 border-green-500/20">
+                            <CheckCircle className="w-3 h-3 mr-1" /> Disetujui
+                          </Badge>
+                        ) : (
+                          <Badge className="bg-amber-500/10 text-amber-600 border-amber-500/20">
+                            <Clock className="w-3 h-3 mr-1" /> Menunggu
+                          </Badge>
+                        )}
+                      </TableCell>
                       <TableCell>
                         <Badge variant={account.is_active ? "default" : "secondary"} className={account.is_active ? "bg-green-500/10 text-green-500" : ""}>
                           {account.is_active ? "Aktif" : "Nonaktif"}
@@ -361,6 +409,16 @@ export function StaffManager() {
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center justify-end gap-2">
+                          {!account.is_approved && (
+                            <Button
+                              variant="default"
+                              size="sm"
+                              className="bg-green-600 hover:bg-green-700"
+                              onClick={() => approveAccount(account)}
+                            >
+                              <CheckCircle className="w-4 h-4 mr-1" /> Approve
+                            </Button>
+                          )}
                           <Dialog open={passwordDialogOpen && selectedAccount?.id === account.id} onOpenChange={(open) => {
                             setPasswordDialogOpen(open);
                             if (!open) setSelectedAccount(null);

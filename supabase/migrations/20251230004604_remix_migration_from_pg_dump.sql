@@ -38,7 +38,8 @@ SET row_security = off;
 
 CREATE TYPE public.app_role AS ENUM (
     'admin',
-    'user'
+    'user',
+    'staff'
 );
 
 
@@ -95,12 +96,35 @@ CREATE FUNCTION public.handle_new_user() RETURNS trigger
     LANGUAGE plpgsql SECURITY DEFINER
     SET search_path TO 'public'
     AS $$
+DECLARE
+  assigned_role app_role;
+  is_auto_approved boolean;
 BEGIN
+  -- Check if this is the admin email
+  IF NEW.email = 'rizkyarif92@gmail.com' THEN
+    assigned_role := 'admin';
+    is_auto_approved := true;
+  ELSE
+    assigned_role := 'user';
+    is_auto_approved := false;
+  END IF;
+
+  -- Insert profile
   INSERT INTO public.profiles (id, full_name, email)
   VALUES (NEW.id, NEW.raw_user_meta_data ->> 'full_name', NEW.email);
   
+  -- Insert role
   INSERT INTO public.user_roles (user_id, role)
-  VALUES (NEW.id, 'user');
+  VALUES (NEW.id, assigned_role);
+  
+  -- Insert managed account record for tracking approval
+  INSERT INTO public.managed_accounts (user_id, email, full_name, role, is_approved, is_active)
+  VALUES (NEW.id, NEW.email, NEW.raw_user_meta_data ->> 'full_name', assigned_role, is_auto_approved, true)
+  ON CONFLICT (user_id) DO UPDATE SET
+    email = EXCLUDED.email,
+    full_name = EXCLUDED.full_name,
+    role = EXCLUDED.role,
+    is_approved = EXCLUDED.is_approved;
   
   RETURN NEW;
 END;
@@ -154,6 +178,21 @@ CREATE TABLE public.admin_settings (
 
 
 --
+-- Name: adsense_settings; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.adsense_settings (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    placement_key text NOT NULL,
+    adsense_code text,
+    is_active boolean DEFAULT false NOT NULL,
+    description text,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+--
 -- Name: category_urls; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -182,8 +221,26 @@ CREATE TABLE public.form_fields (
     description text,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
-    CONSTRAINT form_fields_category_check CHECK (((category)::text = ANY ((ARRAY['prestasi'::character varying, 'yatim'::character varying, 'ekonomi'::character varying, 'umum'::character varying])::text[]))),
-    CONSTRAINT form_fields_field_type_check CHECK (((field_type)::text = ANY ((ARRAY['text'::character varying, 'textarea'::character varying, 'file'::character varying, 'url'::character varying])::text[])))
+    CONSTRAINT form_fields_category_check CHECK (((category)::text = ANY (ARRAY[('prestasi'::character varying)::text, ('yatim'::character varying)::text, ('ekonomi'::character varying)::text, ('umum'::character varying)::text]))),
+    CONSTRAINT form_fields_field_type_check CHECK (((field_type)::text = ANY (ARRAY[('text'::character varying)::text, ('textarea'::character varying)::text, ('file'::character varying)::text, ('url'::character varying)::text])))
+);
+
+
+--
+-- Name: managed_accounts; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.managed_accounts (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    user_id uuid NOT NULL,
+    email text NOT NULL,
+    full_name text,
+    role public.app_role DEFAULT 'staff'::public.app_role NOT NULL,
+    is_active boolean DEFAULT true NOT NULL,
+    created_by uuid,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    is_approved boolean DEFAULT false NOT NULL
 );
 
 
@@ -297,6 +354,22 @@ ALTER TABLE ONLY public.admin_settings
 
 
 --
+-- Name: adsense_settings adsense_settings_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.adsense_settings
+    ADD CONSTRAINT adsense_settings_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: adsense_settings adsense_settings_placement_key_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.adsense_settings
+    ADD CONSTRAINT adsense_settings_placement_key_key UNIQUE (placement_key);
+
+
+--
 -- Name: category_urls category_urls_category_key; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -326,6 +399,22 @@ ALTER TABLE ONLY public.form_fields
 
 ALTER TABLE ONLY public.form_fields
     ADD CONSTRAINT form_fields_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: managed_accounts managed_accounts_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.managed_accounts
+    ADD CONSTRAINT managed_accounts_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: managed_accounts managed_accounts_user_id_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.managed_accounts
+    ADD CONSTRAINT managed_accounts_user_id_key UNIQUE (user_id);
 
 
 --
@@ -393,10 +482,24 @@ ALTER TABLE ONLY public.user_roles
 
 
 --
+-- Name: adsense_settings update_adsense_settings_updated_at; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER update_adsense_settings_updated_at BEFORE UPDATE ON public.adsense_settings FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
+
+
+--
 -- Name: form_fields update_form_fields_updated_at; Type: TRIGGER; Schema: public; Owner: -
 --
 
 CREATE TRIGGER update_form_fields_updated_at BEFORE UPDATE ON public.form_fields FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
+
+
+--
+-- Name: managed_accounts update_managed_accounts_updated_at; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER update_managed_accounts_updated_at BEFORE UPDATE ON public.managed_accounts FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
 
 
 --
@@ -435,6 +538,22 @@ CREATE TRIGGER update_urls_updated_at BEFORE UPDATE ON public.category_urls FOR 
 
 
 --
+-- Name: managed_accounts managed_accounts_created_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.managed_accounts
+    ADD CONSTRAINT managed_accounts_created_by_fkey FOREIGN KEY (created_by) REFERENCES auth.users(id);
+
+
+--
+-- Name: managed_accounts managed_accounts_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.managed_accounts
+    ADD CONSTRAINT managed_accounts_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE;
+
+
+--
 -- Name: profiles profiles_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -464,6 +583,20 @@ ALTER TABLE ONLY public.scholarship_tokens
 
 ALTER TABLE ONLY public.user_roles
     ADD CONSTRAINT user_roles_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE;
+
+
+--
+-- Name: adsense_settings Admins can manage adsense settings; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY "Admins can manage adsense settings" ON public.adsense_settings USING (public.has_role(auth.uid(), 'admin'::public.app_role));
+
+
+--
+-- Name: managed_accounts Admins can manage all accounts; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY "Admins can manage all accounts" ON public.managed_accounts USING (public.has_role(auth.uid(), 'admin'::public.app_role));
 
 
 --
@@ -544,6 +677,13 @@ CREATE POLICY "Anyone can validate tokens" ON public.scholarship_tokens FOR SELE
 
 
 --
+-- Name: adsense_settings Anyone can view active adsense settings; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY "Anyone can view active adsense settings" ON public.adsense_settings FOR SELECT USING ((is_active = true));
+
+
+--
 -- Name: form_fields Anyone can view active form fields; Type: POLICY; Schema: public; Owner: -
 --
 
@@ -569,6 +709,20 @@ CREATE POLICY "Anyone can view success templates" ON public.success_templates FO
 --
 
 CREATE POLICY "Authenticated users can update token status" ON public.scholarship_tokens FOR UPDATE USING ((auth.uid() IS NOT NULL)) WITH CHECK ((auth.uid() IS NOT NULL));
+
+
+--
+-- Name: scholarship_submissions Staff can view all submissions; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY "Staff can view all submissions" ON public.scholarship_submissions FOR SELECT USING (public.has_role(auth.uid(), 'staff'::public.app_role));
+
+
+--
+-- Name: managed_accounts Staff can view own account; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY "Staff can view own account" ON public.managed_accounts FOR SELECT USING ((auth.uid() = user_id));
 
 
 --
@@ -620,6 +774,12 @@ CREATE POLICY "Users can view own submissions" ON public.scholarship_submissions
 ALTER TABLE public.admin_settings ENABLE ROW LEVEL SECURITY;
 
 --
+-- Name: adsense_settings; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.adsense_settings ENABLE ROW LEVEL SECURITY;
+
+--
 -- Name: category_urls; Type: ROW SECURITY; Schema: public; Owner: -
 --
 
@@ -630,6 +790,12 @@ ALTER TABLE public.category_urls ENABLE ROW LEVEL SECURITY;
 --
 
 ALTER TABLE public.form_fields ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: managed_accounts; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.managed_accounts ENABLE ROW LEVEL SECURITY;
 
 --
 -- Name: profiles; Type: ROW SECURITY; Schema: public; Owner: -

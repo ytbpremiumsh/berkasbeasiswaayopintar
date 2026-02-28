@@ -3,8 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Search, CheckCircle, XCircle, Clock, FileText, Loader2 } from "lucide-react";
+import { Search, CheckCircle, XCircle, Clock, FileText, Loader2, AlertCircle } from "lucide-react";
 import { SimpleHeader } from "@/components/SimpleHeader";
 import { Footer } from "@/components/Footer";
 import { AdsenseAd } from "@/components/AdsenseAd";
@@ -24,15 +23,18 @@ const categoryLabels: Record<string, string> = {
   umum: "Beasiswa Umum",
 };
 
+type CheckResult = {
+  status: "not_found" | "valid_no_submission" | "has_submission";
+  message?: string;
+  submission?: any;
+  token?: any;
+  category?: string;
+};
+
 const CheckStatus = () => {
   const [tokenCode, setTokenCode] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [result, setResult] = useState<{
-    found: boolean;
-    hasSubmission: boolean;
-    submission?: any;
-    token?: any;
-  } | null>(null);
+  const [result, setResult] = useState<CheckResult | null>(null);
 
   const handleCheck = async () => {
     if (!tokenCode.trim()) return;
@@ -41,38 +43,88 @@ const CheckStatus = () => {
     setResult(null);
 
     try {
-      // First, find the token
-      const { data: token, error: tokenError } = await supabase
+      const code = tokenCode.toUpperCase().trim();
+      
+      // Step 1: Check in local database first
+      const { data: localToken, error: localError } = await supabase
         .from("scholarship_tokens")
         .select("*")
-        .eq("token_code", tokenCode.toUpperCase().trim())
+        .eq("token_code", code)
         .maybeSingle();
 
-      if (tokenError) throw tokenError;
+      if (localError) throw localError;
 
-      if (!token) {
-        setResult({ found: false, hasSubmission: false });
+      // If token exists in local DB
+      if (localToken) {
+        // Check if there's a submission
+        const { data: submission, error: subError } = await supabase
+          .from("scholarship_submissions")
+          .select("*")
+          .eq("token_id", localToken.id)
+          .maybeSingle();
+
+        if (subError) throw subError;
+
+        if (submission) {
+          setResult({
+            status: "has_submission",
+            submission,
+            token: localToken,
+          });
+        } else {
+          setResult({
+            status: "valid_no_submission",
+            token: localToken,
+            category: localToken.category,
+            message: "Token valid dari lisensi Mayar, tetapi belum mengirimkan berkas",
+          });
+        }
         return;
       }
 
-      // Check if there's a submission for this token
-      const { data: submission, error: subError } = await supabase
-        .from("scholarship_submissions")
-        .select("*")
-        .eq("token_id", token.id)
-        .maybeSingle();
-
-      if (subError) throw subError;
-
-      setResult({
-        found: true,
-        hasSubmission: !!submission,
-        submission,
-        token,
+      // Step 2: Token not in local DB, verify with Mayar API
+      // Note: We pass empty category since we just want to verify, not create with a specific category
+      const { data: verifyData, error: verifyError } = await supabase.functions.invoke("verify-license", {
+        body: { licenseCode: code, checkOnly: true },
       });
+
+      if (verifyError) {
+        console.error("Verify license error:", verifyError);
+        setResult({
+          status: "not_found",
+          message: "Gagal memverifikasi token, silakan coba lagi",
+        });
+        return;
+      }
+
+      if (verifyData?.valid) {
+        // Token is valid in Mayar but no submission yet
+        // The verify-license function creates the token in DB, so fetch it
+        const { data: newToken } = await supabase
+          .from("scholarship_tokens")
+          .select("*")
+          .eq("token_code", code)
+          .maybeSingle();
+
+        setResult({
+          status: "valid_no_submission",
+          token: newToken,
+          category: newToken?.category,
+          message: "Token valid dari lisensi Mayar, tetapi belum mengirimkan berkas",
+        });
+      } else {
+        // Token not found in Mayar API
+        setResult({
+          status: "not_found",
+          message: verifyData?.message || "Kode token tidak ditemukan di sistem Mayar",
+        });
+      }
     } catch (error) {
       console.error("Error checking status:", error);
-      setResult({ found: false, hasSubmission: false });
+      setResult({
+        status: "not_found",
+        message: "Terjadi kesalahan saat memeriksa token",
+      });
     } finally {
       setIsLoading(false);
     }
@@ -117,7 +169,7 @@ const CheckStatus = () => {
 
               {result && (
                 <div className="mt-6 animate-in fade-in-50 slide-in-from-bottom-4 duration-300">
-                  {!result.found ? (
+                  {result.status === "not_found" ? (
                     <div className="p-6 rounded-xl bg-destructive/10 border border-destructive/20">
                       <div className="flex items-center gap-3">
                         <div className="w-12 h-12 rounded-full bg-destructive/20 flex items-center justify-center">
@@ -125,54 +177,73 @@ const CheckStatus = () => {
                         </div>
                         <div>
                           <p className="font-semibold text-destructive">Token Tidak Ditemukan</p>
-                          <p className="text-sm text-muted-foreground">Pastikan kode token yang Anda masukkan benar</p>
+                          <p className="text-sm text-muted-foreground">
+                            {result.message || "Pastikan kode token yang Anda masukkan benar"}
+                          </p>
                         </div>
                       </div>
                     </div>
-                  ) : !result.hasSubmission ? (
+                  ) : result.status === "valid_no_submission" ? (
                     <div className="p-6 rounded-xl bg-amber-50 border border-amber-200">
                       <div className="flex items-center gap-3">
                         <div className="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center">
-                          <FileText className="w-6 h-6 text-amber-600" />
+                          <AlertCircle className="w-6 h-6 text-amber-600" />
                         </div>
                         <div>
                           <p className="font-semibold text-amber-700">Belum Mengirimkan Berkas</p>
-                          <p className="text-sm text-amber-600">Token valid tapi Anda belum mengirimkan berkas beasiswa</p>
+                          <p className="text-sm text-amber-600">
+                            Token valid dari lisensi Mayar, tetapi Anda belum mengirimkan berkas beasiswa
+                          </p>
                         </div>
                       </div>
-                      <div className="mt-4 p-3 rounded-lg bg-amber-100/50">
-                        <p className="text-sm text-amber-700">
-                          <strong>Kategori:</strong> {categoryLabels[result.token?.category] || result.token?.category}
-                        </p>
+                      
+                      {/* Ad between content and button */}
+                      <AdsenseAd placement="between_sections" className="my-4" />
+                      
+                      <div className="mt-4">
+                        <Button 
+                          variant="outline" 
+                          className="w-full border-amber-300 text-amber-700 hover:bg-amber-100"
+                          onClick={() => window.location.href = "/"}
+                        >
+                          <FileText className="w-4 h-4 mr-2" />
+                          Kirim Berkas Sekarang
+                        </Button>
                       </div>
                     </div>
                   ) : (
                     <div className="space-y-4">
-                    <div className="p-6 rounded-xl bg-emerald-100 border border-emerald-200">
-                      <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center">
-                          <CheckCircle className="w-6 h-6 text-emerald-600" />
-                        </div>
-                        <div>
-                          <p className="font-semibold text-emerald-600">Berkas Sudah Terkirim</p>
-                          <p className="text-sm text-emerald-500">Pengajuan beasiswa Anda telah berhasil dikirim</p>
+                      <div className="p-6 rounded-xl bg-emerald-100 border border-emerald-200">
+                        <div className="flex items-center gap-3">
+                          <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center">
+                            <CheckCircle className="w-6 h-6 text-emerald-600" />
+                          </div>
+                          <div>
+                            <p className="font-semibold text-emerald-600">Berkas Sudah Terkirim</p>
+                            <p className="text-sm text-emerald-500">Pengajuan beasiswa Anda telah berhasil dikirim</p>
+                          </div>
                         </div>
                       </div>
-                    </div>
 
                       <div className="p-4 rounded-lg bg-muted/50 space-y-2">
                         <div className="flex justify-between text-sm">
                           <span className="text-muted-foreground">Nama:</span>
-                          <span className="font-medium">{result.submission.full_name}</span>
+                          <span className="font-medium">{result.submission?.full_name}</span>
                         </div>
                         <div className="flex justify-between text-sm">
                           <span className="text-muted-foreground">Kategori:</span>
-                          <span className="font-medium">{categoryLabels[result.submission.category] || result.submission.category}</span>
+                          <span className="font-medium">{categoryLabels[result.submission?.category] || result.submission?.category}</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-muted-foreground">Status:</span>
+                          <span className={`font-medium ${statusConfig[result.submission?.status as SubmissionStatus]?.color || ""}`}>
+                            {statusConfig[result.submission?.status as SubmissionStatus]?.label || result.submission?.status}
+                          </span>
                         </div>
                         <div className="flex justify-between text-sm">
                           <span className="text-muted-foreground">Tanggal Kirim:</span>
                           <span className="font-medium">
-                            {new Date(result.submission.submitted_at).toLocaleDateString("id-ID", {
+                            {new Date(result.submission?.submitted_at).toLocaleDateString("id-ID", {
                               day: "numeric",
                               month: "long",
                               year: "numeric",

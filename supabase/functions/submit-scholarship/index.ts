@@ -25,6 +25,7 @@ serve(async (req) => {
       fullName,
       email,
       phone,
+      institutionName,
       kartuPelajarUrl,
       ktmUrl,
       cvUrl,
@@ -49,7 +50,7 @@ serve(async (req) => {
       );
     }
 
-    // Verify token is valid
+    // Verify token is valid and get token code
     const { data: token, error: tokenError } = await supabase
       .from("scholarship_tokens")
       .select("*")
@@ -70,6 +71,8 @@ serve(async (req) => {
       );
     }
 
+    const tokenCode = token.token_code;
+
     // Update token status
     await supabase
       .from("scholarship_tokens")
@@ -85,6 +88,7 @@ serve(async (req) => {
       full_name: fullName,
       email,
       phone,
+      institution_name: institutionName,
       kartu_pelajar_url: kartuPelajarUrl,
       ktm_url: ktmUrl,
       cv_url: cvUrl,
@@ -109,13 +113,29 @@ serve(async (req) => {
     // Send WhatsApp notification
     try {
       const { data: settings } = await supabase.from("admin_settings").select("*");
-      
-      const apiUrl = settings?.find(s => s.setting_key === "onesender_api_url")?.setting_value;
-      const apiKey = settings?.find(s => s.setting_key === "onesender_api_key")?.setting_value;
-      const phoneNumber = settings?.find(s => s.setting_key === "onesender_phone")?.setting_value;
-      const template = settings?.find(s => s.setting_key === "whatsapp_template")?.setting_value;
 
-      if (apiUrl?.value && apiKey?.value && phoneNumber?.value && template?.value && phone) {
+      const apiUrl = settings?.find((s) => s.setting_key === "onesender_api_url")?.setting_value;
+      const apiKey = settings?.find((s) => s.setting_key === "onesender_api_key")?.setting_value;
+      const phoneNumber = settings?.find((s) => s.setting_key === "onesender_phone")?.setting_value;
+      const template = settings?.find((s) => s.setting_key === "whatsapp_template")?.setting_value;
+      const whatsappEnabled = settings?.find((s) => s.setting_key === "whatsapp_enabled")?.setting_value;
+
+      const onlyDigits = (v: string) => (v || "").replace(/\D/g, "");
+      const normalizeIndoPhone = (v: string) => {
+        const d = onlyDigits(v);
+        if (!d) return "";
+        if (d.startsWith("62")) return d;
+        if (d.startsWith("0")) return `62${d.slice(1)}`;
+        return d;
+      };
+
+      // Check if WhatsApp is enabled
+      const isEnabled = whatsappEnabled?.value === true || whatsappEnabled?.value === "true";
+
+      const sender = normalizeIndoPhone(String(phoneNumber?.value || ""));
+      const recipient = normalizeIndoPhone(String(phone || ""));
+
+      if (isEnabled && apiUrl?.value && apiKey?.value && sender && template?.value && recipient) {
         const categoryLabels: Record<string, string> = {
           prestasi: "Prestasi",
           yatim: "Yatim",
@@ -127,25 +147,57 @@ serve(async (req) => {
           .replace(/\{\{nama\}\}/g, fullName)
           .replace(/\{\{kategori_beasiswa\}\}/g, categoryLabels[category] || category)
           .replace(/\{\{status_pendaftar\}\}/g, applicantStatus.replace("_", " "))
-          .replace(/\{\{tanggal_submit\}\}/g, new Date().toLocaleDateString("id-ID"));
+          .replace(/\{\{tanggal_submit\}\}/g, new Date().toLocaleDateString("id-ID"))
+          .replace(/\{\{token\}\}/g, tokenCode);
 
-        await fetch(apiUrl.value, {
+        console.log("Sending WhatsApp to:", recipient);
+
+        const waResponse = await fetch(apiUrl.value, {
           method: "POST",
           headers: {
             "Authorization": `Bearer ${apiKey.value}`,
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            phone: phone.startsWith("0") ? "62" + phone.slice(1) : phone,
+            phone: recipient,
             message,
-            sender: phoneNumber.value,
+            sender,
           }),
+        });
+
+        let waResult: any = null;
+        try {
+          waResult = await waResponse.json();
+        } catch (_) {
+          waResult = { raw: await waResponse.text().catch(() => "") };
+        }
+
+        console.log("WhatsApp response:", waResult);
+
+        // Log the message
+        await supabase.from("whatsapp_logs").insert({
+          recipient_phone: recipient,
+          recipient_name: fullName,
+          message,
+          status: waResponse.ok ? "success" : "failed",
+          error_message: waResponse.ok ? null : JSON.stringify(waResult),
+        });
+      } else if (!isEnabled) {
+        console.log("WhatsApp notifications are disabled");
+      } else {
+        console.log("WhatsApp not sent: missing config/phone", {
+          hasApiUrl: !!apiUrl?.value,
+          hasApiKey: !!apiKey?.value,
+          hasSender: !!sender,
+          hasTemplate: !!template?.value,
+          hasRecipient: !!recipient,
         });
       }
     } catch (waError) {
       console.error("WhatsApp notification error:", waError);
       // Don't fail the submission if WhatsApp fails
     }
+
 
     return new Response(
       JSON.stringify({ success: true, message: "Berkas berhasil dikirim" }),

@@ -1,8 +1,10 @@
 import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { ProgressSteps } from "@/components/ProgressSteps";
 import { TokenValidator } from "@/components/TokenValidator";
 import { FileUpload } from "@/components/FileUpload";
+import { DynamicFormField } from "@/components/DynamicFormField";
+import { FormBanner } from "@/components/FormBanner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -22,6 +24,7 @@ interface FormData {
   email: string;
   phone: string;
   applicantStatus: ApplicantStatus | "";
+  institutionName: string;
   kartuPelajarUrl: string;
   ktmUrl: string;
   cvUrl: string;
@@ -49,14 +52,18 @@ const categoryInfo = {
 interface FormField {
   field_name: string;
   field_label: string;
+  field_type: string;
   is_required: boolean;
   is_active: boolean;
   category: string;
+  description: string | null;
 }
 
 const ScholarshipForm = () => {
   const { category } = useParams<{ category: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const isEmbed = searchParams.get("embed") === "true";
   const [currentStep, setCurrentStep] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [sessionId] = useState(() => crypto.randomUUID());
@@ -69,6 +76,7 @@ const ScholarshipForm = () => {
     email: "",
     phone: "",
     applicantStatus: "",
+    institutionName: "",
     kartuPelajarUrl: "",
     ktmUrl: "",
     cvUrl: "",
@@ -96,7 +104,7 @@ const ScholarshipForm = () => {
       
       const { data, error } = await supabase
         .from("form_fields")
-        .select("field_name, field_label, is_required, is_active, category")
+        .select("field_name, field_label, field_type, is_required, is_active, category, description")
         .eq("category", validCategory)
         .eq("is_active", true)
         .order("display_order");
@@ -125,6 +133,16 @@ const ScholarshipForm = () => {
     return field?.field_label || defaultLabel;
   };
 
+  const getFieldType = (fieldName: string): string => {
+    const field = formFields.find((f) => f.field_name === fieldName);
+    return field?.field_type || "file";
+  };
+
+  const getFieldDescription = (fieldName: string): string | null => {
+    const field = formFields.find((f) => f.field_name === fieldName);
+    return field?.description || null;
+  };
+
   if (!info) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -148,7 +166,7 @@ const ScholarshipForm = () => {
       case 0:
         return !!formData.tokenId;
       case 1:
-        return !!formData.fullName && !!formData.email && !!formData.applicantStatus;
+        return !!formData.fullName && !!formData.email && !!formData.applicantStatus && !!formData.institutionName;
       case 2:
         return validateRequiredFiles();
       default:
@@ -209,6 +227,7 @@ const ScholarshipForm = () => {
           fullName: formData.fullName,
           email: formData.email,
           phone: formData.phone || null,
+          institutionName: formData.institutionName || null,
           kartuPelajarUrl: formData.kartuPelajarUrl || null,
           ktmUrl: formData.ktmUrl || null,
           cvUrl: formData.cvUrl || null,
@@ -310,6 +329,18 @@ const ScholarshipForm = () => {
               <label className="text-sm font-medium">Nomor Telepon</label>
               <Input placeholder="08xxxxxxxxxx" value={formData.phone} onChange={(e) => updateFormData("phone", e.target.value)} />
             </div>
+            {formData.applicantStatus && (
+              <div className="space-y-2">
+                <label className="text-sm font-medium">
+                  {isMahasiswa ? "Nama Universitas" : "Nama Sekolah"} <span className="text-destructive">*</span>
+                </label>
+                <Input 
+                  placeholder={isMahasiswa ? "Masukkan nama universitas" : "Masukkan nama sekolah"} 
+                  value={formData.institutionName} 
+                  onChange={(e) => updateFormData("institutionName", e.target.value)} 
+                />
+              </div>
+            )}
           </div>
         );
 
@@ -326,157 +357,183 @@ const ScholarshipForm = () => {
           <div className="space-y-6 animate-fade-in">
             {/* Kartu Identitas untuk Pelajar */}
             {isPelajar && isFieldActive("kartu_pelajar_url") && (
-              <FileUpload
+              <DynamicFormField
+                fieldName="kartu_pelajar_url"
                 label={getFieldLabel("kartu_pelajar_url", "Kartu Pelajar / KTA")}
+                fieldType={getFieldType("kartu_pelajar_url")}
                 required={isFieldRequired("kartu_pelajar_url")}
-                folder={uploadFolder}
+                description={getFieldDescription("kartu_pelajar_url")}
                 value={formData.kartuPelajarUrl}
-                onUpload={(url) => updateFormData("kartuPelajarUrl", url)}
+                onChange={(url) => updateFormData("kartuPelajarUrl", url)}
+                uploadFolder={uploadFolder}
               />
             )}
             
             {/* Kartu Identitas untuk Mahasiswa */}
             {isMahasiswa && isFieldActive("ktm_url") && (
-              <FileUpload
+              <DynamicFormField
+                fieldName="ktm_url"
                 label={getFieldLabel("ktm_url", "Kartu Tanda Mahasiswa (KTM) / Dokumen Resmi")}
+                fieldType={getFieldType("ktm_url")}
                 required={isFieldRequired("ktm_url")}
-                folder={uploadFolder}
+                description={getFieldDescription("ktm_url")}
                 value={formData.ktmUrl}
-                onUpload={(url) => updateFormData("ktmUrl", url)}
+                onChange={(url) => updateFormData("ktmUrl", url)}
+                uploadFolder={uploadFolder}
               />
             )}
 
             {/* CV */}
             {isFieldActive("cv_url") && (
-              <FileUpload 
-                label={getFieldLabel("cv_url", "Curriculum Vitae (CV)")} 
-                required={isFieldRequired("cv_url")} 
-                folder={uploadFolder} 
-                value={formData.cvUrl} 
-                onUpload={(url) => updateFormData("cvUrl", url)} 
+              <DynamicFormField
+                fieldName="cv_url"
+                label={getFieldLabel("cv_url", "Curriculum Vitae (CV)")}
+                fieldType={getFieldType("cv_url")}
+                required={isFieldRequired("cv_url")}
+                description={getFieldDescription("cv_url")}
+                value={formData.cvUrl}
+                onChange={(url) => updateFormData("cvUrl", url)}
+                uploadFolder={uploadFolder}
               />
             )}
 
             {/* Sertifikat Prestasi */}
             {isFieldActive("sertifikat_prestasi_url") && (
-              <FileUpload 
-                label={getFieldLabel("sertifikat_prestasi_url", "Sertifikat Prestasi (Akademik/Non-Akademik)")} 
+              <DynamicFormField
+                fieldName="sertifikat_prestasi_url"
+                label={getFieldLabel("sertifikat_prestasi_url", "Sertifikat Prestasi (Akademik/Non-Akademik)")}
+                fieldType={getFieldType("sertifikat_prestasi_url")}
                 required={isFieldRequired("sertifikat_prestasi_url")}
-                folder={uploadFolder} 
-                value={formData.sertifikatPrestasiUrl} 
-                onUpload={(url) => updateFormData("sertifikatPrestasiUrl", url)} 
+                description={getFieldDescription("sertifikat_prestasi_url")}
+                value={formData.sertifikatPrestasiUrl}
+                onChange={(url) => updateFormData("sertifikatPrestasiUrl", url)}
+                uploadFolder={uploadFolder}
               />
             )}
 
             {/* Transkrip Nilai - Mahasiswa only */}
             {isMahasiswa && isFieldActive("transkrip_nilai_url") && (
-              <FileUpload 
-                label={getFieldLabel("transkrip_nilai_url", "Transkrip Nilai")} 
+              <DynamicFormField
+                fieldName="transkrip_nilai_url"
+                label={getFieldLabel("transkrip_nilai_url", "Transkrip Nilai")}
+                fieldType={getFieldType("transkrip_nilai_url")}
                 required={isFieldRequired("transkrip_nilai_url")}
-                folder={uploadFolder} 
-                value={formData.transkripNilaiUrl} 
-                onUpload={(url) => updateFormData("transkripNilaiUrl", url)} 
+                description={getFieldDescription("transkrip_nilai_url")}
+                value={formData.transkripNilaiUrl}
+                onChange={(url) => updateFormData("transkripNilaiUrl", url)}
+                uploadFolder={uploadFolder}
               />
             )}
 
             {/* KHS - Mahasiswa only */}
             {isMahasiswa && isFieldActive("khs_url") && (
-              <FileUpload 
-                label={getFieldLabel("khs_url", "Kartu Hasil Studi (KHS)")} 
+              <DynamicFormField
+                fieldName="khs_url"
+                label={getFieldLabel("khs_url", "Kartu Hasil Studi (KHS)")}
+                fieldType={getFieldType("khs_url")}
                 required={isFieldRequired("khs_url")}
-                folder={uploadFolder} 
-                value={formData.khsUrl} 
-                onUpload={(url) => updateFormData("khsUrl", url)} 
+                description={getFieldDescription("khs_url")}
+                value={formData.khsUrl}
+                onChange={(url) => updateFormData("khsUrl", url)}
+                uploadFolder={uploadFolder}
               />
             )}
 
             {/* Esai */}
             {isFieldActive("essay") && (
-              <div className="space-y-2">
-                <label className="text-sm font-medium">
-                  {getFieldLabel("essay", "Esai / Pernyataan Pribadi")} 
-                  {isFieldRequired("essay") && <span className="text-destructive">*</span>}
-                </label>
-                <p className="text-xs text-muted-foreground">Maksimal 500 kata</p>
-                <Textarea 
-                  placeholder="Tuliskan esai Anda di sini..." 
-                  value={formData.essay} 
-                  onChange={(e) => updateFormData("essay", e.target.value)} 
-                  className="min-h-[200px]" 
-                />
-                <p className="text-xs text-muted-foreground">{formData.essay.split(/\s+/).filter(Boolean).length}/500 kata</p>
-              </div>
+              <DynamicFormField
+                fieldName="essay"
+                label={getFieldLabel("essay", "Esai / Pernyataan Pribadi")}
+                fieldType={getFieldType("essay")}
+                required={isFieldRequired("essay")}
+                description={getFieldDescription("essay")}
+                value={formData.essay}
+                onChange={(value) => updateFormData("essay", value)}
+                uploadFolder={uploadFolder}
+              />
             )}
 
             {/* Bukti Penghasilan */}
             {isFieldActive("bukti_penghasilan_url") && (
-              <FileUpload 
-                label={getFieldLabel("bukti_penghasilan_url", "Bukti Penghasilan Orang Tua / Wali")} 
+              <DynamicFormField
+                fieldName="bukti_penghasilan_url"
+                label={getFieldLabel("bukti_penghasilan_url", "Bukti Penghasilan Orang Tua / Wali")}
+                fieldType={getFieldType("bukti_penghasilan_url")}
                 required={isFieldRequired("bukti_penghasilan_url")}
-                folder={uploadFolder} 
-                value={formData.buktiPenghasilanUrl} 
-                onUpload={(url) => updateFormData("buktiPenghasilanUrl", url)} 
+                description={getFieldDescription("bukti_penghasilan_url")}
+                value={formData.buktiPenghasilanUrl}
+                onChange={(url) => updateFormData("buktiPenghasilanUrl", url)}
+                uploadFolder={uploadFolder}
               />
             )}
 
             {/* Bukti Listrik */}
             {isFieldActive("bukti_listrik_url") && (
-              <FileUpload 
-                label={getFieldLabel("bukti_listrik_url", "Bukti Pembayaran Listrik / Token (Bulan Terakhir)")} 
+              <DynamicFormField
+                fieldName="bukti_listrik_url"
+                label={getFieldLabel("bukti_listrik_url", "Bukti Pembayaran Listrik / Token (Bulan Terakhir)")}
+                fieldType={getFieldType("bukti_listrik_url")}
                 required={isFieldRequired("bukti_listrik_url")}
-                folder={uploadFolder} 
-                value={formData.buktiListrikUrl} 
-                onUpload={(url) => updateFormData("buktiListrikUrl", url)} 
+                description={getFieldDescription("bukti_listrik_url")}
+                value={formData.buktiListrikUrl}
+                onChange={(url) => updateFormData("buktiListrikUrl", url)}
+                uploadFolder={uploadFolder}
               />
             )}
 
             {/* Surat Keterangan Yatim */}
             {isFieldActive("surat_keterangan_yatim_url") && (
-              <FileUpload 
-                label={getFieldLabel("surat_keterangan_yatim_url", "Surat Keterangan Yatim / Dokumen Pendukung")} 
+              <DynamicFormField
+                fieldName="surat_keterangan_yatim_url"
+                label={getFieldLabel("surat_keterangan_yatim_url", "Surat Keterangan Yatim / Dokumen Pendukung")}
+                fieldType={getFieldType("surat_keterangan_yatim_url")}
                 required={isFieldRequired("surat_keterangan_yatim_url")}
-                folder={uploadFolder} 
-                value={formData.suratKeteranganYatimUrl} 
-                onUpload={(url) => updateFormData("suratKeteranganYatimUrl", url)} 
+                description={getFieldDescription("surat_keterangan_yatim_url")}
+                value={formData.suratKeteranganYatimUrl}
+                onChange={(url) => updateFormData("suratKeteranganYatimUrl", url)}
+                uploadFolder={uploadFolder}
               />
             )}
 
             {/* SKTM */}
             {isFieldActive("sktm_url") && (
-              <FileUpload 
-                label={getFieldLabel("sktm_url", "Surat Keterangan Tidak Mampu (SKTM)")} 
+              <DynamicFormField
+                fieldName="sktm_url"
+                label={getFieldLabel("sktm_url", "Surat Keterangan Tidak Mampu (SKTM)")}
+                fieldType={getFieldType("sktm_url")}
                 required={isFieldRequired("sktm_url")}
-                folder={uploadFolder} 
-                value={formData.sktmUrl} 
-                onUpload={(url) => updateFormData("sktmUrl", url)} 
+                description={getFieldDescription("sktm_url")}
+                value={formData.sktmUrl}
+                onChange={(url) => updateFormData("sktmUrl", url)}
+                uploadFolder={uploadFolder}
               />
             )}
 
             {/* Video TikTok */}
             {isFieldActive("video_tiktok_url") && (
-              <div className="space-y-2">
-                <label className="text-sm font-medium">
-                  {getFieldLabel("video_tiktok_url", "Video TikTok")}
-                  {isFieldRequired("video_tiktok_url") && <span className="text-destructive">*</span>}
-                </label>
-                <p className="text-xs text-muted-foreground">Minimal 1 menit tentang Beasiswa Pendidikan Ayo Pintar</p>
-                <Input 
-                  placeholder="https://tiktok.com/@username/video/..." 
-                  value={formData.videoTiktokUrl} 
-                  onChange={(e) => updateFormData("videoTiktokUrl", e.target.value)} 
-                />
-              </div>
+              <DynamicFormField
+                fieldName="video_tiktok_url"
+                label={getFieldLabel("video_tiktok_url", "Video TikTok")}
+                fieldType={getFieldType("video_tiktok_url")}
+                required={isFieldRequired("video_tiktok_url")}
+                description={getFieldDescription("video_tiktok_url")}
+                value={formData.videoTiktokUrl}
+                onChange={(url) => updateFormData("videoTiktokUrl", url)}
+                uploadFolder={uploadFolder}
+              />
             )}
 
             {/* Berkas Pendukung */}
             {isFieldActive("berkas_pendukung_url") && (
-              <FileUpload 
-                label={getFieldLabel("berkas_pendukung_url", "Berkas Pendukung Lainnya")} 
-                description={isFieldRequired("berkas_pendukung_url") ? undefined : "Opsional"}
+              <DynamicFormField
+                fieldName="berkas_pendukung_url"
+                label={getFieldLabel("berkas_pendukung_url", "Berkas Pendukung Lainnya")}
+                fieldType={getFieldType("berkas_pendukung_url")}
                 required={isFieldRequired("berkas_pendukung_url")}
-                folder={uploadFolder} 
-                value={formData.berkasPendukungUrl} 
-                onUpload={(url) => updateFormData("berkasPendukungUrl", url)} 
+                description={getFieldDescription("berkas_pendukung_url") || (isFieldRequired("berkas_pendukung_url") ? undefined : "Opsional")}
+                value={formData.berkasPendukungUrl}
+                onChange={(url) => updateFormData("berkasPendukungUrl", url)}
+                uploadFolder={uploadFolder}
               />
             )}
           </div>
@@ -502,8 +559,16 @@ const ScholarshipForm = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
-      <main className="flex-1 container mx-auto px-4 py-8">
+    <div className={`min-h-screen flex flex-col bg-background ${isEmbed ? 'p-2' : ''}`}>
+      <main className={`flex-1 container mx-auto ${isEmbed ? 'px-2 py-4' : 'px-4 py-8'}`}>
+        {!isEmbed && <AdsenseAd placement="header" className="mb-6 max-w-2xl mx-auto" />}
+        
+        {!isEmbed && (
+          <div className="max-w-2xl mx-auto">
+            <FormBanner category={validCategory} />
+          </div>
+        )}
+        
         <Card variant="elevated" className="max-w-2xl mx-auto">
           <CardHeader className="text-center">
             <div className={`w-16 h-16 rounded-2xl mx-auto mb-4 flex items-center justify-center bg-gradient-to-br ${info.color}`}>
@@ -517,13 +582,19 @@ const ScholarshipForm = () => {
 
             {renderStep()}
 
+            {!isEmbed && <AdsenseAd placement="between_sections" className="my-4" />}
+
             <div className="flex justify-between pt-4">
               <Button 
                 variant="outline" 
-                onClick={() => currentStep === 0 ? navigate("/") : setCurrentStep(s => s - 1)}
+                onClick={() => currentStep === 0 ? (isEmbed ? null : navigate("/")) : setCurrentStep(s => s - 1)}
+                disabled={currentStep === 0 && isEmbed}
               >
                 <ArrowLeft className="w-4 h-4 mr-2" /> Kembali
               </Button>
+              
+              {!isEmbed && <AdsenseAd placement="sidebar" className="hidden md:block mx-4" />}
+              
               {currentStep < steps.length - 1 ? (
                 <Button onClick={() => setCurrentStep(s => s + 1)} disabled={!canProceed()}>
                   Lanjut <ArrowRight className="w-4 h-4 ml-2" />
@@ -538,12 +609,10 @@ const ScholarshipForm = () => {
           </CardContent>
         </Card>
         
-        {/* Content Bottom Ad */}
-        <AdsenseAd placement="content_bottom" className="mt-8" />
+        {!isEmbed && <AdsenseAd placement="content_bottom" className="mt-8 max-w-2xl mx-auto" />}
       </main>
       
-      {/* Footer Ad */}
-      <AdsenseAd placement="footer" className="container mx-auto px-4 mb-4" />
+      {!isEmbed && <AdsenseAd placement="footer" className="container mx-auto px-4 mb-4" />}
     </div>
   );
 };

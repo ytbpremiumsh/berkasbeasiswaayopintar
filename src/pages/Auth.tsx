@@ -7,7 +7,7 @@ import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import { Loader2, Mail, Lock, User } from "lucide-react";
+import { Loader2, Mail, Lock, User, Clock } from "lucide-react";
 
 const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -15,16 +15,33 @@ const Auth = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
+  const [pendingApproval, setPendingApproval] = useState(false);
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setPendingApproval(false);
 
     try {
       if (isLogin) {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
+
+        // Check if user is approved
+        const { data: accountData } = await supabase
+          .from("managed_accounts")
+          .select("is_approved, role")
+          .eq("user_id", data.user.id)
+          .maybeSingle();
+
+        // If account exists and not approved (and not admin), show pending message
+        if (accountData && !accountData.is_approved && accountData.role !== 'admin') {
+          await supabase.auth.signOut();
+          setPendingApproval(true);
+          return;
+        }
+
         toast({ title: "Berhasil masuk", description: "Selamat datang kembali!" });
         navigate("/");
       } else {
@@ -37,8 +54,11 @@ const Auth = () => {
           },
         });
         if (error) throw error;
-        toast({ title: "Pendaftaran berhasil", description: "Akun Anda telah dibuat. Silakan masuk." });
-        setIsLogin(true);
+        toast({ 
+          title: "Pendaftaran berhasil", 
+          description: "Akun Anda telah dibuat dan menunggu persetujuan admin." 
+        });
+        setPendingApproval(true);
       }
     } catch (error: any) {
       toast({ title: "Terjadi kesalahan", description: error.message, variant: "destructive" });
@@ -46,6 +66,40 @@ const Auth = () => {
       setIsLoading(false);
     }
   };
+
+  if (pendingApproval) {
+    return (
+      <div className="min-h-screen flex flex-col bg-background">
+        <Navbar />
+        <div className="flex-1 flex items-center justify-center p-4">
+          <Card variant="elevated" className="w-full max-w-md animate-scale-in text-center">
+            <CardHeader>
+              <div className="mx-auto w-16 h-16 rounded-full bg-amber-100 flex items-center justify-center mb-4">
+                <Clock className="w-8 h-8 text-amber-600" />
+              </div>
+              <CardTitle className="text-2xl">Menunggu Persetujuan</CardTitle>
+              <CardDescription className="text-base">
+                Akun Anda sedang dalam proses verifikasi oleh admin. Anda akan mendapat notifikasi setelah akun disetujui.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  setPendingApproval(false);
+                  setIsLogin(true);
+                }}
+                className="w-full"
+              >
+                Kembali ke Login
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
