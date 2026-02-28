@@ -7,7 +7,7 @@ const corsHeaders = {
 };
 
 const MAYAR_API_URL = "https://api.mayar.id/software/v1/license/verify";
-const MAYAR_PRODUCT_ID = "2ea686ca-2b53-4cd3-aea7-219af02ea19d";
+const MAYAR_PRODUCT_ID = "8fedc066-ad35-460f-92b4-9193bab866b6";
 
 serve(async (req) => {
   // Handle CORS preflight
