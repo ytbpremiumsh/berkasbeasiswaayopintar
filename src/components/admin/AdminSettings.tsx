@@ -4,14 +4,17 @@ import { toast } from "@/hooks/use-toast";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Loader2, Save, Key, User, Mail } from "lucide-react";
+import { Loader2, Save, Key, User, Mail, FileText } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 export function AdminSettings() {
   const [mayarApiKey, setMayarApiKey] = useState("");
   const [mayarProductId, setMayarProductId] = useState("");
+  const [checkStatusButtonText, setCheckStatusButtonText] = useState("Kirim Berkas Sekarang");
+  const [checkStatusButtonLink, setCheckStatusButtonLink] = useState("/");
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isSavingButton, setIsSavingButton] = useState(false);
   
   // Profile
   const [currentEmail, setCurrentEmail] = useState("");
@@ -35,14 +38,18 @@ export function AdminSettings() {
       const { data, error } = await supabase
         .from("admin_settings")
         .select("*")
-        .in("setting_key", ["mayar_api_key", "mayar_product_id"]);
+        .in("setting_key", ["mayar_api_key", "mayar_product_id", "check_status_button"]);
 
       if (error) throw error;
 
       data?.forEach((item) => {
-        const value = (item.setting_value as any)?.value || "";
-        if (item.setting_key === "mayar_api_key") setMayarApiKey(value);
-        if (item.setting_key === "mayar_product_id") setMayarProductId(value);
+        const val = item.setting_value as any;
+        if (item.setting_key === "mayar_api_key") setMayarApiKey(val?.value || "");
+        if (item.setting_key === "mayar_product_id") setMayarProductId(val?.value || "");
+        if (item.setting_key === "check_status_button") {
+          setCheckStatusButtonText(val?.button_text || "Kirim Berkas Sekarang");
+          setCheckStatusButtonLink(val?.button_link || "/");
+        }
       });
     } catch (error) {
       console.error("Error fetching settings:", error);
@@ -300,6 +307,64 @@ export function AdminSettings() {
               <Save className="w-4 h-4 mr-2" />
             )}
             Simpan Pengaturan Mayar
+          </Button>
+        </CardContent>
+      </Card>
+
+      {/* Check Status Button Settings */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center">
+              <FileText className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <CardTitle>Tombol Cek Status</CardTitle>
+              <CardDescription>Kustomisasi tombol "Kirim Berkas Sekarang" pada halaman Cek Status Administrasi</CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Teks Tombol</label>
+            <Input
+              placeholder="Kirim Berkas Sekarang"
+              value={checkStatusButtonText}
+              onChange={(e) => setCheckStatusButtonText(e.target.value)}
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Link Tujuan Tombol</label>
+            <Input
+              placeholder="https://example.com atau /halaman"
+              value={checkStatusButtonLink}
+              onChange={(e) => setCheckStatusButtonLink(e.target.value)}
+            />
+            <p className="text-xs text-muted-foreground">Gunakan URL lengkap (https://...) untuk link eksternal atau path relatif (/) untuk halaman internal</p>
+          </div>
+          <Button onClick={async () => {
+            setIsSavingButton(true);
+            try {
+              const { error } = await supabase
+                .from("admin_settings")
+                .upsert({
+                  setting_key: "check_status_button",
+                  setting_value: { button_text: checkStatusButtonText, button_link: checkStatusButtonLink },
+                }, { onConflict: "setting_key" });
+              if (error) throw error;
+              toast({ title: "Pengaturan tombol berhasil disimpan" });
+            } catch (error: any) {
+              toast({ title: "Gagal menyimpan", description: error.message, variant: "destructive" });
+            } finally {
+              setIsSavingButton(false);
+            }
+          }} disabled={isSavingButton}>
+            {isSavingButton ? (
+              <Loader2 className="w-4 h-4 animate-spin mr-2" />
+            ) : (
+              <Save className="w-4 h-4 mr-2" />
+            )}
+            Simpan Pengaturan Tombol
           </Button>
         </CardContent>
       </Card>

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -35,6 +35,24 @@ const CheckStatus = () => {
   const [tokenCode, setTokenCode] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState<CheckResult | null>(null);
+  const [buttonText, setButtonText] = useState("Kirim Berkas Sekarang");
+  const [buttonLink, setButtonLink] = useState("/");
+
+  // Fetch custom button config
+  useEffect(() => {
+    supabase
+      .from("admin_settings")
+      .select("setting_value")
+      .eq("setting_key", "check_status_button")
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data) {
+          const val = data.setting_value as any;
+          if (val?.button_text) setButtonText(val.button_text);
+          if (val?.button_link) setButtonLink(val.button_link);
+        }
+      });
+  }, []);
 
   const handleCheck = async () => {
     if (!tokenCode.trim()) return;
@@ -204,10 +222,16 @@ const CheckStatus = () => {
                         <Button 
                           variant="outline" 
                           className="w-full border-amber-300 text-amber-700 hover:bg-amber-100"
-                          onClick={() => window.location.href = "/"}
+                          onClick={() => {
+                            if (buttonLink.startsWith("http")) {
+                              window.open(buttonLink, "_blank");
+                            } else {
+                              window.location.href = buttonLink;
+                            }
+                          }}
                         >
                           <FileText className="w-4 h-4 mr-2" />
-                          Kirim Berkas Sekarang
+                          {buttonText}
                         </Button>
                       </div>
                     </div>
