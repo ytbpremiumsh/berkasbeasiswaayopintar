@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.1"
+    PostgrestVersion: "14.4"
   }
   public: {
     Tables: {
@@ -367,41 +367,32 @@ export type Database = {
       shortlink_visits: {
         Row: {
           browser: string | null
-          city: string | null
-          country: string | null
           device_type: string | null
           id: string
           ip_address: string | null
           os: string | null
           referrer: string | null
           shortlink_id: string
-          user_agent: string | null
           visited_at: string
         }
         Insert: {
           browser?: string | null
-          city?: string | null
-          country?: string | null
           device_type?: string | null
           id?: string
           ip_address?: string | null
           os?: string | null
           referrer?: string | null
           shortlink_id: string
-          user_agent?: string | null
           visited_at?: string
         }
         Update: {
           browser?: string | null
-          city?: string | null
-          country?: string | null
           device_type?: string | null
           id?: string
           ip_address?: string | null
           os?: string | null
           referrer?: string | null
           shortlink_id?: string
-          user_agent?: string | null
           visited_at?: string
         }
         Relationships: [
@@ -516,40 +507,32 @@ export type Database = {
           error_message: string | null
           id: string
           message: string
-          recipient_name: string | null
+          recipient_name: string
           recipient_phone: string
+          sent_at: string | null
           status: string
-          submission_id: string | null
         }
         Insert: {
           created_at?: string
           error_message?: string | null
           id?: string
           message: string
-          recipient_name?: string | null
+          recipient_name: string
           recipient_phone: string
+          sent_at?: string | null
           status?: string
-          submission_id?: string | null
         }
         Update: {
           created_at?: string
           error_message?: string | null
           id?: string
           message?: string
-          recipient_name?: string | null
+          recipient_name?: string
           recipient_phone?: string
+          sent_at?: string | null
           status?: string
-          submission_id?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "whatsapp_logs_submission_id_fkey"
-            columns: ["submission_id"]
-            isOneToOne: false
-            referencedRelation: "scholarship_submissions"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
     }
     Views: {
