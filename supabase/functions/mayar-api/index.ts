@@ -37,7 +37,7 @@ serve(async (req) => {
       });
     }
 
-    const mayarApiKey = (settingData?.setting_value as any)?.value;
+    const mayarApiKey = (settingData?.setting_value as any)?.value || Deno.env.get("MAYAR_API_KEY");
 
     if (!mayarApiKey) {
       console.error("MAYAR_API_KEY not configured in settings");
