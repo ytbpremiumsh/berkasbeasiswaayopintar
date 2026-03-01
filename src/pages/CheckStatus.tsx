@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -32,6 +33,8 @@ type CheckResult = {
 };
 
 const CheckStatus = () => {
+  const [searchParams] = useSearchParams();
+  const isEmbed = searchParams.get("embed") === "true";
   const [tokenCode, setTokenCode] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState<CheckResult | null>(null);
@@ -149,10 +152,10 @@ const CheckStatus = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-b from-background to-muted/30">
-      <SimpleHeader />
+    <div className={`min-h-screen flex flex-col bg-gradient-to-b from-background to-muted/30 ${isEmbed ? 'p-2' : ''}`}>
+      {!isEmbed && <SimpleHeader />}
       
-      <main className="flex-1 container mx-auto px-4 py-12">
+      <main className={`flex-1 container mx-auto ${isEmbed ? 'px-2 py-4' : 'px-4 py-12'}`}>
         <div className="max-w-lg mx-auto">
           <div className="text-center mb-8">
             <div className="w-16 h-16 mx-auto mb-4 rounded-2xl gradient-primary flex items-center justify-center">
@@ -215,8 +218,7 @@ const CheckStatus = () => {
                         </div>
                       </div>
                       
-                      {/* Ad between content and button */}
-                      <AdsenseAd placement="between_sections" className="my-4" />
+                      {!isEmbed && <AdsenseAd placement="between_sections" className="my-4" />}
                       
                       <div className="mt-4">
                         <Button 
@@ -282,14 +284,12 @@ const CheckStatus = () => {
           </Card>
         </div>
         
-        {/* Content Bottom Ad */}
-        <AdsenseAd placement="content_bottom" className="mt-8 max-w-md mx-auto" />
+        {!isEmbed && <AdsenseAd placement="content_bottom" className="mt-8 max-w-md mx-auto" />}
       </main>
 
-      {/* Footer Ad */}
-      <AdsenseAd placement="footer" className="container mx-auto px-4 mb-4" />
+      {!isEmbed && <AdsenseAd placement="footer" className="container mx-auto px-4 mb-4" />}
       
-      <Footer />
+      {!isEmbed && <Footer />}
     </div>
   );
 };
