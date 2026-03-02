@@ -85,7 +85,7 @@ export function AdminSidebar({ activeTab, onTabChange, onLogout, isCollapsed = f
 
   return (
     <aside className={cn(
-      "bg-card border-r min-h-screen flex flex-col transition-all duration-300",
+      "bg-card border-r h-screen sticky top-0 flex flex-col transition-all duration-300",
       isCollapsed ? "w-16" : "w-64"
     )}>
       {/* Logo */}
