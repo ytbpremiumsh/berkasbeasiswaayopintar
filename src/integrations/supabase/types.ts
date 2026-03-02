@@ -122,6 +122,33 @@ export type Database = {
         }
         Relationships: []
       }
+      check_status_logs: {
+        Row: {
+          created_at: string
+          id: string
+          ip_info: string | null
+          result: string
+          submission_name: string | null
+          token_code: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          ip_info?: string | null
+          result: string
+          submission_name?: string | null
+          token_code: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          ip_info?: string | null
+          result?: string
+          submission_name?: string | null
+          token_code?: string
+        }
+        Relationships: []
+      }
       form_fields: {
         Row: {
           category: string

@@ -151,6 +151,19 @@ const CheckStatus = () => {
     }
   };
 
+  // Log the check result to database
+  useEffect(() => {
+    if (!result) return;
+    const code = tokenCode.toUpperCase().trim();
+    supabase.from("check_status_logs").insert({
+      token_code: code,
+      result: result.status,
+      submission_name: result.submission?.full_name || null,
+    }).then(({ error }) => {
+      if (error) console.error("Failed to log check:", error);
+    });
+  }, [result]);
+
   return (
     <div className={`min-h-screen flex flex-col bg-gradient-to-b from-background to-muted/30 ${isEmbed ? 'p-2' : ''}`}>
       {!isEmbed && <SimpleHeader />}

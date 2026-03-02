@@ -1,4 +1,4 @@
-import { FileText, Key, FormInput, Settings, LayoutDashboard, LogOut, CheckSquare, Copy, BadgeCheck, PanelLeftClose, PanelLeft, Users, MonitorPlay, Wallet, ChevronDown, Image, Link2, ListChecks, Clock, MessageCircle, Code } from "lucide-react";
+import { FileText, Key, FormInput, Settings, LayoutDashboard, LogOut, CheckSquare, Copy, BadgeCheck, PanelLeftClose, PanelLeft, Users, MonitorPlay, Wallet, ChevronDown, Image, Link2, ListChecks, Clock, MessageCircle, Code, Eye } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -52,6 +52,7 @@ const menuGroups = [
       { id: "staff", label: "Kelola Staff", icon: Users },
       { id: "adsense", label: "Kelola AdSense", icon: MonitorPlay },
       { id: "embed", label: "Embed Form", icon: Code },
+      { id: "check-logs", label: "Log Cek Status", icon: Eye },
     ],
   },
   {
