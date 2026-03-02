@@ -251,6 +251,23 @@ const CheckStatus = () => {
                         </div>
                       </div>
 
+                      {/* Status Verifikasi */}
+                      {(() => {
+                        const status = result.submission?.status as SubmissionStatus;
+                        const config = statusConfig[status];
+                        if (!config) return null;
+                        const StatusIcon = config.icon;
+                        return (
+                          <div className={`p-4 rounded-lg ${config.bgColor} border flex items-center gap-3`}>
+                            <StatusIcon className={`w-5 h-5 ${config.color}`} />
+                            <div>
+                              <p className={`font-semibold text-sm ${config.color}`}>Status Verifikasi</p>
+                              <p className={`text-sm ${config.color}`}>{config.label}</p>
+                            </div>
+                          </div>
+                        );
+                      })()}
+
                       <div className="p-4 rounded-lg bg-muted/50 space-y-2">
                         <div className="flex justify-between text-sm">
                           <span className="text-muted-foreground">Nama:</span>
