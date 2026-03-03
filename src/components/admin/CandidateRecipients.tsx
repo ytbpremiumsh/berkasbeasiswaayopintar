@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Loader2, Download, CheckCircle, Trophy, Heart, Wallet, Globe, Eye, ExternalLink, Award } from "lucide-react";
+import { Loader2, Download, Trophy, Heart, Wallet, Globe, Eye, ExternalLink, Award, UserCheck, Undo2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import * as XLSX from "xlsx";
 
@@ -19,7 +19,7 @@ const categoryConfig: Record<ScholarshipCategory, { label: string; icon: any; gr
   umum: { label: "Umum", icon: Globe, gradient: "from-blue-500 to-indigo-500" },
 };
 
-interface VerifiedSubmission {
+interface CandidateSubmission {
   id: string;
   full_name: string;
   email: string;
@@ -32,7 +32,7 @@ interface VerifiedSubmission {
   submitted_at: string;
   verified_by: string | null;
   verified_at: string | null;
-  // File URLs
+  admin_notes: string | null;
   kartu_pelajar_url: string | null;
   ktm_url: string | null;
   cv_url: string | null;
@@ -47,92 +47,88 @@ interface VerifiedSubmission {
   video_tiktok_url: string | null;
   berkas_pendukung_url: string | null;
   bukti_struk_url: string | null;
-  // Admin info
   verified_by_name?: string;
 }
 
-export function VerifiedSubmissions() {
+export function CandidateRecipients() {
   const [isLoading, setIsLoading] = useState(true);
-  const [submissions, setSubmissions] = useState<VerifiedSubmission[]>([]);
+  const [submissions, setSubmissions] = useState<CandidateSubmission[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<"all" | ScholarshipCategory>("all");
 
   useEffect(() => {
-    fetchVerified();
+    fetchCandidates();
   }, []);
 
-  const fetchVerified = async () => {
+  const fetchCandidates = async () => {
     setIsLoading(true);
     try {
       const { data: subs, error } = await supabase
         .from("scholarship_submissions")
         .select(`
           id, full_name, email, phone, category, applicant_status, institution_name,
-          token_id, submitted_at, verified_by, verified_at,
+          token_id, submitted_at, verified_by, verified_at, admin_notes,
           kartu_pelajar_url, ktm_url, cv_url, sertifikat_prestasi_url,
           transkrip_nilai_url, khs_url, essay, bukti_penghasilan_url,
           bukti_listrik_url, surat_keterangan_yatim_url, sktm_url,
           video_tiktok_url, berkas_pendukung_url, bukti_struk_url
         `)
-        .eq("status", "diverifikasi")
+        .eq("status", "kandidat_peraih")
         .order("submitted_at", { ascending: false });
 
       if (error) throw error;
 
-      // Get all tokens for mapping
-      const { data: tokens } = await supabase
-        .from("scholarship_tokens")
-        .select("id, token_code");
-
+      const { data: tokens } = await supabase.from("scholarship_tokens").select("id, token_code");
       const tokenMap = new Map(tokens?.map(t => [t.id, t.token_code]) || []);
 
-      // Get admin profiles for verified_by names
       const verifiedByIds = subs?.map(s => s.verified_by).filter(Boolean) || [];
-      const { data: profiles } = await supabase
-        .from("profiles")
-        .select("id, full_name, email")
-        .in("id", verifiedByIds);
-
+      const { data: profiles } = await supabase.from("profiles").select("id, full_name, email").in("id", verifiedByIds);
       const profileMap = new Map(profiles?.map(p => [p.id, p.full_name || p.email]) || []);
 
-      // Add token_code and verified_by_name to submissions
       const subsWithDetails = subs?.map(s => ({
         ...s,
         token_code: tokenMap.get(s.token_id) || "Unknown",
         verified_by_name: s.verified_by ? profileMap.get(s.verified_by) || "Admin" : undefined
       })) || [];
 
-      setSubmissions(subsWithDetails as VerifiedSubmission[]);
+      setSubmissions(subsWithDetails as CandidateSubmission[]);
     } catch (error) {
-      console.error("Error fetching verified:", error);
+      console.error("Error fetching candidates:", error);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const promoteToCandidate = async (id: string) => {
+  const revertToVerified = async (id: string) => {
     try {
       const { error } = await supabase
         .from("scholarship_submissions")
-        .update({ status: "kandidat_peraih" as any })
+        .update({ status: "diverifikasi" as any })
         .eq("id", id);
       if (error) throw error;
-      toast({ title: "Berhasil", description: "Peserta dipromosikan ke Kandidat Peraih" });
-      fetchVerified();
+      toast({ title: "Status dikembalikan ke Terverifikasi" });
+      fetchCandidates();
     } catch (error: any) {
       toast({ title: "Gagal", description: error.message, variant: "destructive" });
     }
   };
 
-  const filteredSubmissions = selectedCategory === "all" 
-    ? submissions 
+  const filteredSubmissions = selectedCategory === "all"
+    ? submissions
     : submissions.filter(s => s.category === selectedCategory);
+
+  const categoryCounts = {
+    all: submissions.length,
+    prestasi: submissions.filter(s => s.category === "prestasi").length,
+    yatim: submissions.filter(s => s.category === "yatim").length,
+    ekonomi: submissions.filter(s => s.category === "ekonomi").length,
+    umum: submissions.filter(s => s.category === "umum").length,
+  };
 
   const exportToExcel = () => {
     if (filteredSubmissions.length === 0) {
-      toast({ title: "Tidak ada data", description: "Tidak ada data untuk diexport", variant: "destructive" });
+      toast({ title: "Tidak ada data", variant: "destructive" });
       return;
     }
-
     const exportData = filteredSubmissions.map(sub => ({
       "Nama Lengkap": sub.full_name,
       "Email": sub.email,
@@ -143,39 +139,12 @@ export function VerifiedSubmissions() {
       "Kode Token": sub.token_code,
       "Tanggal Submit": new Date(sub.submitted_at).toLocaleDateString("id-ID"),
       "Diverifikasi Oleh": sub.verified_by_name || "-",
-      "Tanggal Verifikasi": sub.verified_at ? new Date(sub.verified_at).toLocaleDateString("id-ID") : "-",
-      // File URLs
-      "Kartu Pelajar": sub.kartu_pelajar_url || "-",
-      "KTM": sub.ktm_url || "-",
-      "CV": sub.cv_url || "-",
-      "Sertifikat Prestasi": sub.sertifikat_prestasi_url || "-",
-      "Transkrip Nilai": sub.transkrip_nilai_url || "-",
-      "KHS": sub.khs_url || "-",
-      "Esai": sub.essay ? sub.essay.substring(0, 500) : "-",
-      "Bukti Penghasilan": sub.bukti_penghasilan_url || "-",
-      "Bukti Listrik": sub.bukti_listrik_url || "-",
-      "Surat Keterangan Yatim": sub.surat_keterangan_yatim_url || "-",
-      "SKTM": sub.sktm_url || "-",
-      "Video TikTok": sub.video_tiktok_url || "-",
-      "Berkas Pendukung": sub.berkas_pendukung_url || "-",
-      "Bukti Struk": sub.bukti_struk_url || "-",
     }));
-
     const ws = XLSX.utils.json_to_sheet(exportData);
     const wb = XLSX.utils.book_new();
-    const sheetName = selectedCategory === "all" ? "Semua Kategori" : categoryConfig[selectedCategory].label;
-    XLSX.utils.book_append_sheet(wb, ws, `Terverifikasi - ${sheetName}`);
-    XLSX.writeFile(wb, `peserta_terverifikasi_${selectedCategory}_${new Date().toISOString().split("T")[0]}.xlsx`);
-    
-    toast({ title: "Export berhasil", description: `${filteredSubmissions.length} data berhasil diexport dengan link berkas` });
-  };
-
-  const categoryCounts = {
-    all: submissions.length,
-    prestasi: submissions.filter(s => s.category === "prestasi").length,
-    yatim: submissions.filter(s => s.category === "yatim").length,
-    ekonomi: submissions.filter(s => s.category === "ekonomi").length,
-    umum: submissions.filter(s => s.category === "umum").length,
+    XLSX.utils.book_append_sheet(wb, ws, "Kandidat Peraih");
+    XLSX.writeFile(wb, `kandidat_peraih_${selectedCategory}_${new Date().toISOString().split("T")[0]}.xlsx`);
+    toast({ title: "Export berhasil" });
   };
 
   if (isLoading) {
@@ -189,21 +158,21 @@ export function VerifiedSubmissions() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-foreground">Peserta Terverifikasi</h1>
-        <p className="text-muted-foreground">Daftar peserta yang sudah divalidasi dengan kode token</p>
+        <h1 className="text-2xl font-bold text-foreground">Kandidat Peraih Beasiswa</h1>
+        <p className="text-muted-foreground">Peserta terverifikasi yang terpilih sebagai kandidat penerima beasiswa</p>
       </div>
 
       {/* Stats */}
-      <Card className="border-l-4 border-l-success">
+      <Card className="border-l-4 border-l-amber-500">
         <CardContent className="p-4">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between flex-wrap gap-4">
             <div className="flex items-center gap-4">
-              <div className="w-14 h-14 rounded-2xl bg-success/10 flex items-center justify-center">
-                <CheckCircle className="w-7 h-7 text-success" />
+              <div className="w-14 h-14 rounded-2xl bg-amber-500/10 flex items-center justify-center">
+                <Award className="w-7 h-7 text-amber-500" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Total Terverifikasi</p>
-                <p className="text-3xl font-bold text-success">{submissions.length}</p>
+                <p className="text-sm text-muted-foreground">Total Kandidat Peraih</p>
+                <p className="text-3xl font-bold text-amber-500">{submissions.length}</p>
               </div>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -227,9 +196,9 @@ export function VerifiedSubmissions() {
         <CardHeader>
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-              <CardTitle>Data Peserta Terverifikasi</CardTitle>
+              <CardTitle>Data Kandidat Peraih</CardTitle>
               <CardDescription>
-                Menampilkan {filteredSubmissions.length} peserta 
+                Menampilkan {filteredSubmissions.length} kandidat
                 {selectedCategory !== "all" && ` kategori ${categoryConfig[selectedCategory].label}`}
               </CardDescription>
             </div>
@@ -239,7 +208,7 @@ export function VerifiedSubmissions() {
                   <SelectValue placeholder="Kategori" />
                 </SelectTrigger>
                 <SelectContent className="bg-card border">
-                  <SelectItem value="all">Semua Kategori</SelectItem>
+                  <SelectItem value="all">Semua ({categoryCounts.all})</SelectItem>
                   {(Object.keys(categoryConfig) as ScholarshipCategory[]).map(cat => (
                     <SelectItem key={cat} value={cat}>
                       {categoryConfig[cat].label} ({categoryCounts[cat]})
@@ -248,8 +217,7 @@ export function VerifiedSubmissions() {
                 </SelectContent>
               </Select>
               <Button onClick={exportToExcel} className="gap-2">
-                <Download className="w-4 h-4" />
-                Export Excel
+                <Download className="w-4 h-4" /> Export
               </Button>
             </div>
           </div>
@@ -257,7 +225,9 @@ export function VerifiedSubmissions() {
         <CardContent>
           {filteredSubmissions.length === 0 ? (
             <div className="py-12 text-center">
-              <p className="text-muted-foreground">Belum ada peserta terverifikasi</p>
+              <Award className="w-12 h-12 mx-auto text-muted-foreground/30 mb-3" />
+              <p className="text-muted-foreground">Belum ada kandidat peraih</p>
+              <p className="text-sm text-muted-foreground mt-1">Pilih peserta dari halaman Terverifikasi untuk dijadikan kandidat</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -269,9 +239,8 @@ export function VerifiedSubmissions() {
                     <TableHead>Email</TableHead>
                     <TableHead>Kategori</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead>Korektor</TableHead>
+                    <TableHead>Institusi</TableHead>
                     <TableHead>Kode Token</TableHead>
-                    <TableHead>Tanggal</TableHead>
                     <TableHead className="text-center">Aksi</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -287,37 +256,23 @@ export function VerifiedSubmissions() {
                         <TableCell>
                           <Badge variant="outline" className="gap-1">
                             <Icon className="w-3 h-3" />
-                            {catConfig?.label || sub.category}
+                            {catConfig?.label}
                           </Badge>
                         </TableCell>
                         <TableCell className="capitalize">{sub.applicant_status?.replace("_", " ")}</TableCell>
-                        <TableCell>
-                          {sub.verified_by_name ? (
-                            <div className="text-sm">
-                              <p className="font-medium">{sub.verified_by_name}</p>
-                              {sub.verified_at && (
-                                <p className="text-xs text-muted-foreground">
-                                  {new Date(sub.verified_at).toLocaleDateString("id-ID")}
-                                </p>
-                              )}
-                            </div>
-                          ) : (
-                            <span className="text-muted-foreground">-</span>
-                          )}
-                        </TableCell>
+                        <TableCell>{sub.institution_name || "-"}</TableCell>
                         <TableCell className="font-mono text-xs bg-muted/50 rounded px-2">{sub.token_code}</TableCell>
-                        <TableCell>{new Date(sub.submitted_at).toLocaleDateString("id-ID")}</TableCell>
                         <TableCell>
                           <div className="flex items-center justify-center gap-1">
                             <Dialog>
                               <DialogTrigger asChild>
-                                <Button variant="ghost" size="icon" title="Lihat Berkas">
+                                <Button variant="ghost" size="icon" title="Lihat Detail">
                                   <Eye className="w-4 h-4" />
                                 </Button>
                               </DialogTrigger>
                               <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
                                 <DialogHeader>
-                                  <DialogTitle>Berkas: {sub.full_name}</DialogTitle>
+                                  <DialogTitle>Detail Kandidat: {sub.full_name}</DialogTitle>
                                 </DialogHeader>
                                 <div className="space-y-4">
                                   <div className="grid grid-cols-2 gap-4 text-sm">
@@ -331,11 +286,12 @@ export function VerifiedSubmissions() {
                                       <div className="col-span-2">
                                         <span className="text-muted-foreground">Diverifikasi oleh:</span>{" "}
                                         <strong>{sub.verified_by_name}</strong>
-                                        {sub.verified_at && (
-                                          <span className="text-muted-foreground ml-2">
-                                            ({new Date(sub.verified_at).toLocaleString("id-ID")})
-                                          </span>
-                                        )}
+                                      </div>
+                                    )}
+                                    {sub.admin_notes && (
+                                      <div className="col-span-2">
+                                        <span className="text-muted-foreground">Catatan Admin:</span>
+                                        <p className="mt-1 bg-muted p-2 rounded text-sm">{sub.admin_notes}</p>
                                       </div>
                                     )}
                                   </div>
@@ -372,8 +328,8 @@ export function VerifiedSubmissions() {
                                 </div>
                               </DialogContent>
                             </Dialog>
-                            <Button variant="ghost" size="icon" title="Jadikan Kandidat Peraih" onClick={() => promoteToCandidate(sub.id)}>
-                              <Award className="w-4 h-4 text-amber-500" />
+                            <Button variant="ghost" size="icon" title="Kembalikan ke Terverifikasi" onClick={() => revertToVerified(sub.id)}>
+                              <Undo2 className="w-4 h-4" />
                             </Button>
                           </div>
                         </TableCell>

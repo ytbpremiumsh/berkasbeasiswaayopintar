@@ -13,7 +13,7 @@ import { Loader2, Eye, CheckCircle, XCircle, Download, Trophy, Heart, Wallet, Gl
 import * as XLSX from "xlsx";
 
 type ScholarshipCategory = "prestasi" | "yatim" | "ekonomi" | "umum";
-type SubmissionStatus = "menunggu" | "diverifikasi" | "ditolak";
+type SubmissionStatus = "menunggu" | "diverifikasi" | "ditolak" | "kandidat_peraih";
 
 const categoryConfig: Record<ScholarshipCategory, { label: string; icon: any; gradient: string }> = {
   prestasi: { label: "Prestasi", icon: Trophy, gradient: "from-amber-500 to-orange-500" },
@@ -22,10 +22,11 @@ const categoryConfig: Record<ScholarshipCategory, { label: string; icon: any; gr
   umum: { label: "Umum", icon: Globe, gradient: "from-blue-500 to-indigo-500" },
 };
 
-const statusConfig: Record<SubmissionStatus, { label: string; variant: "default" | "secondary" | "destructive" }> = {
+const statusConfig: Record<SubmissionStatus, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
   menunggu: { label: "Menunggu", variant: "secondary" },
   diverifikasi: { label: "Diverifikasi", variant: "default" },
   ditolak: { label: "Ditolak", variant: "destructive" },
+  kandidat_peraih: { label: "Kandidat Peraih", variant: "outline" },
 };
 
 interface Submission {

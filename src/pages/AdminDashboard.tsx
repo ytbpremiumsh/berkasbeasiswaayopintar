@@ -28,6 +28,7 @@ import { WhatsAppSettings } from "@/components/admin/WhatsAppSettings";
 import { AdminSettings } from "@/components/admin/AdminSettings";
 import { EmbedManager } from "@/components/admin/EmbedManager";
 import { CheckStatusLogs } from "@/components/admin/CheckStatusLogs";
+import { CandidateRecipients } from "@/components/admin/CandidateRecipients";
 import * as XLSX from "xlsx";
 import { cn } from "@/lib/utils";
 import { 
@@ -36,7 +37,7 @@ import {
 } from "lucide-react";
 
 type ScholarshipCategory = "prestasi" | "yatim" | "ekonomi" | "umum";
-type SubmissionStatus = "menunggu" | "diverifikasi" | "ditolak";
+type SubmissionStatus = "menunggu" | "diverifikasi" | "ditolak" | "kandidat_peraih";
 
 const categoryLabels: Record<ScholarshipCategory, { label: string; icon: any; gradient: string; bgLight: string }> = {
   prestasi: { label: "Prestasi", icon: Trophy, gradient: "from-amber-500 to-orange-500", bgLight: "bg-amber-500/10" },
@@ -45,10 +46,11 @@ const categoryLabels: Record<ScholarshipCategory, { label: string; icon: any; gr
   umum: { label: "Umum", icon: Globe, gradient: "from-blue-500 to-indigo-500", bgLight: "bg-blue-500/10" },
 };
 
-const statusLabels: Record<SubmissionStatus, { label: string; variant: "default" | "secondary" | "destructive" }> = {
+const statusLabels: Record<SubmissionStatus, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
   menunggu: { label: "Menunggu", variant: "secondary" },
   diverifikasi: { label: "Diverifikasi", variant: "default" },
   ditolak: { label: "Ditolak", variant: "destructive" },
+  kandidat_peraih: { label: "Kandidat Peraih", variant: "outline" },
 };
 
 const AdminDashboard = () => {
@@ -729,6 +731,9 @@ const AdminDashboard = () => {
 
           {/* Check Status Logs */}
           {activeTab === "check-logs" && <CheckStatusLogs />}
+
+          {/* Candidate Recipients */}
+          {activeTab === "candidates" && <CandidateRecipients />}
 
           {/* All Submissions */}
           {activeTab === "all-submissions" && <AllSubmissions onStatusUpdate={fetchData} />}
