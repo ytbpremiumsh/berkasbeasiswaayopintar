@@ -12,6 +12,7 @@ import AdminDashboard from "./pages/AdminDashboard";
 import CheckStatus from "./pages/CheckStatus";
 import ShortlinkRedirect from "./pages/ShortlinkRedirect";
 import NotFound from "./pages/NotFound";
+import PeraihBeasiswa from "./pages/PeraihBeasiswa";
 
 const queryClient = new QueryClient();
 
@@ -31,6 +32,7 @@ const App = () => (
           <Route path="/go/:slug" element={<ShortlinkRedirect />} />
           <Route path="/admin/login" element={<AdminLogin />} />
           <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="/peraih-beasiswa" element={<PeraihBeasiswa />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

@@ -578,7 +578,11 @@ export type Database = {
       app_role: "admin" | "user" | "staff"
       applicant_status: "pelajar" | "gap_year" | "mahasiswa"
       scholarship_category: "prestasi" | "yatim" | "ekonomi" | "umum"
-      submission_status: "menunggu" | "diverifikasi" | "ditolak"
+      submission_status:
+        | "menunggu"
+        | "diverifikasi"
+        | "ditolak"
+        | "kandidat_peraih"
       token_status: "valid" | "digunakan" | "tidak_valid"
     }
     CompositeTypes: {
@@ -710,7 +714,12 @@ export const Constants = {
       app_role: ["admin", "user", "staff"],
       applicant_status: ["pelajar", "gap_year", "mahasiswa"],
       scholarship_category: ["prestasi", "yatim", "ekonomi", "umum"],
-      submission_status: ["menunggu", "diverifikasi", "ditolak"],
+      submission_status: [
+        "menunggu",
+        "diverifikasi",
+        "ditolak",
+        "kandidat_peraih",
+      ],
       token_status: ["valid", "digunakan", "tidak_valid"],
     },
   },
