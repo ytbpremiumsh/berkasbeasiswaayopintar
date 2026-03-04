@@ -120,6 +120,17 @@ export function DocumentRequirements({ category }: DocumentRequirementsProps) {
 
       <p className="text-xs text-muted-foreground">Format: PDF/JPG/PNG (maks. 5MB)</p>
 
+      <div className="bg-primary/5 border border-primary/20 rounded-md p-2.5 space-y-1">
+        <p className="text-xs font-medium text-foreground flex items-center gap-1.5">
+          <FileText className="w-3.5 h-3.5 text-primary" />
+          Alternatif: Upload via Google Drive
+        </p>
+        <p className="text-xs text-muted-foreground leading-relaxed">
+          Jika ukuran file melebihi 5MB atau ingin mengirim beberapa file sekaligus, Anda dapat mengupload berkas ke <span className="font-medium text-foreground">Google Drive</span> terlebih dahulu, lalu tempelkan link-nya pada form. 
+          Pastikan setiap jenis berkas dimasukkan ke <span className="font-medium text-foreground">folder terpisah</span> dan akses file diatur ke <span className="font-medium text-foreground">"Anyone with the link"</span> agar tim kami dapat mengakses berkas Anda.
+        </p>
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         {/* Pelajar / Gap Year */}
         <div className="space-y-1.5">
