@@ -1,7 +1,8 @@
 import { useState, useRef } from "react";
 import { cn } from "@/lib/utils";
-import { Upload, X, FileText, Image, Loader2 } from "lucide-react";
+import { Upload, X, FileText, Image, Loader2, ExternalLink } from "lucide-react";
 import { Button } from "./ui/button";
+import { Input } from "./ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 
@@ -13,6 +14,7 @@ interface FileUploadProps {
   required?: boolean;
   description?: string;
   folder: string;
+  allowGoogleDrive?: boolean;
 }
 
 export function FileUpload({
@@ -23,19 +25,22 @@ export function FileUpload({
   required = false,
   description,
   folder,
+  allowGoogleDrive = true,
 }: FileUploadProps) {
   const [isUploading, setIsUploading] = useState(false);
   const [dragActive, setDragActive] = useState(false);
+  const [showDriveInput, setShowDriveInput] = useState(false);
+  const [driveLink, setDriveLink] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
   const handleFile = async (file: File) => {
     if (!file) return;
 
-    // Validate file size (max 10MB)
-    if (file.size > 10 * 1024 * 1024) {
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
       toast({
         title: "File terlalu besar",
-        description: "Ukuran file maksimal 10MB",
+        description: "Ukuran file maksimal 5MB",
         variant: "destructive",
       });
       return;
@@ -98,6 +103,23 @@ export function FileUpload({
   };
 
   const isImage = value?.match(/\.(jpg|jpeg|png|gif|webp)$/i);
+  const isGoogleDriveLink = value?.includes("drive.google.com") || value?.includes("docs.google.com");
+
+  const handleDriveLinkSubmit = () => {
+    if (!driveLink.trim()) return;
+    if (!driveLink.includes("drive.google.com") && !driveLink.includes("docs.google.com")) {
+      toast({
+        title: "Link tidak valid",
+        description: "Masukkan link Google Drive yang valid",
+        variant: "destructive",
+      });
+      return;
+    }
+    onUpload(driveLink.trim());
+    setDriveLink("");
+    setShowDriveInput(false);
+    toast({ title: "Berhasil", description: "Link Google Drive berhasil disimpan" });
+  };
 
   return (
     <div className="space-y-2">
@@ -112,20 +134,24 @@ export function FileUpload({
       {value ? (
         <div className="relative rounded-lg border bg-muted/30 p-4">
           <div className="flex items-center gap-3">
-            {isImage ? (
+            {isGoogleDriveLink ? (
+              <ExternalLink className="w-8 h-8 text-primary" />
+            ) : isImage ? (
               <Image className="w-8 h-8 text-primary" />
             ) : (
               <FileText className="w-8 h-8 text-primary" />
             )}
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium truncate">File terunggah</p>
+              <p className="text-sm font-medium truncate">
+                {isGoogleDriveLink ? "Link Google Drive" : "File terunggah"}
+              </p>
               <a
                 href={value}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-xs text-primary hover:underline"
               >
-                Lihat file
+                {isGoogleDriveLink ? "Buka link" : "Lihat file"}
               </a>
             </div>
             <Button
@@ -139,7 +165,25 @@ export function FileUpload({
             </Button>
           </div>
         </div>
+      ) : showDriveInput ? (
+        <div className="space-y-3 rounded-lg border-2 border-dashed border-primary/30 p-4">
+          <p className="text-sm font-medium text-foreground">Tempel Link Google Drive</p>
+          <p className="text-xs text-muted-foreground">
+            Pastikan file di Google Drive diatur agar "Anyone with the link" bisa melihat.
+            Jika lebih dari 1 file, buat folder terpisah lalu bagikan link folder tersebut.
+          </p>
+          <Input
+            placeholder="https://drive.google.com/..."
+            value={driveLink}
+            onChange={(e) => setDriveLink(e.target.value)}
+          />
+          <div className="flex gap-2">
+            <Button type="button" size="sm" onClick={handleDriveLinkSubmit}>Simpan Link</Button>
+            <Button type="button" size="sm" variant="outline" onClick={() => setShowDriveInput(false)}>Batal</Button>
+          </div>
+        </div>
       ) : (
+        <div className="space-y-2">
         <div
           className={cn(
             "relative rounded-lg border-2 border-dashed transition-all duration-200 cursor-pointer",
@@ -174,11 +218,25 @@ export function FileUpload({
                   Klik atau seret file ke sini
                 </p>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  PDF, JPG, PNG (maks. 10MB)
+                  PDF, JPG, PNG (maks. 5MB)
+                </p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Atau upload ke Google Drive lalu tempel link di bawah
                 </p>
               </>
             )}
           </div>
+        </div>
+        {allowGoogleDrive && (
+          <button
+            type="button"
+            onClick={() => setShowDriveInput(true)}
+            className="text-xs text-primary hover:underline flex items-center gap-1"
+          >
+            <ExternalLink className="w-3 h-3" />
+            Atau gunakan link Google Drive
+          </button>
+        )}
         </div>
       )}
     </div>

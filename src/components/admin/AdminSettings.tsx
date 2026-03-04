@@ -4,7 +4,8 @@ import { toast } from "@/hooks/use-toast";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Loader2, Save, Key, User, Mail, FileText } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Loader2, Save, Key, User, Mail, FileText, Trophy } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 export function AdminSettings() {
@@ -15,6 +16,7 @@ export function AdminSettings() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isSavingButton, setIsSavingButton] = useState(false);
+  const [peraihPageActive, setPeraihPageActive] = useState(false);
   
   // Profile
   const [currentEmail, setCurrentEmail] = useState("");
@@ -38,7 +40,7 @@ export function AdminSettings() {
       const { data, error } = await supabase
         .from("admin_settings")
         .select("*")
-        .in("setting_key", ["mayar_api_key", "mayar_product_id", "check_status_button"]);
+        .in("setting_key", ["mayar_api_key", "mayar_product_id", "check_status_button", "peraih_beasiswa_page"]);
 
       if (error) throw error;
 
@@ -49,6 +51,9 @@ export function AdminSettings() {
         if (item.setting_key === "check_status_button") {
           setCheckStatusButtonText(val?.button_text || "Kirim Berkas Sekarang");
           setCheckStatusButtonLink(val?.button_link || "/");
+        }
+        if (item.setting_key === "peraih_beasiswa_page") {
+          setPeraihPageActive(val?.is_active === true);
         }
       });
     } catch (error) {
@@ -366,6 +371,49 @@ export function AdminSettings() {
             )}
             Simpan Pengaturan Tombol
           </Button>
+        </CardContent>
+      </Card>
+      {/* Peraih Beasiswa Page Toggle */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-500 to-yellow-500 flex items-center justify-center">
+              <Trophy className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <CardTitle>Halaman Peraih Beasiswa</CardTitle>
+              <CardDescription>Aktifkan/nonaktifkan halaman publik daftar kandidat peraih beasiswa</CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium">Status Halaman</p>
+              <p className="text-xs text-muted-foreground">
+                {peraihPageActive ? "Halaman aktif dan bisa diakses publik" : "Halaman nonaktif, pengunjung akan melihat pesan belum tersedia"}
+              </p>
+            </div>
+            <Switch
+              checked={peraihPageActive}
+              onCheckedChange={async (checked) => {
+                setPeraihPageActive(checked);
+                try {
+                  const { error } = await supabase
+                    .from("admin_settings")
+                    .upsert({
+                      setting_key: "peraih_beasiswa_page",
+                      setting_value: { is_active: checked },
+                    }, { onConflict: "setting_key" });
+                  if (error) throw error;
+                  toast({ title: checked ? "Halaman diaktifkan" : "Halaman dinonaktifkan" });
+                } catch (error: any) {
+                  setPeraihPageActive(!checked);
+                  toast({ title: "Gagal menyimpan", description: error.message, variant: "destructive" });
+                }
+              }}
+            />
+          </div>
         </CardContent>
       </Card>
     </div>
