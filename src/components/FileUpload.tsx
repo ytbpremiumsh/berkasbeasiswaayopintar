@@ -220,9 +220,6 @@ export function FileUpload({
                 <p className="mt-1 text-xs text-muted-foreground">
                   PDF, JPG, PNG (maks. 5MB)
                 </p>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Atau upload ke Google Drive lalu tempel link di bawah
-                </p>
               </>
             )}
           </div>
