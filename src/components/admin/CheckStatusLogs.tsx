@@ -51,6 +51,16 @@ export function CheckStatusLogs() {
     }
   };
 
+  const deleteLog = async (id: string) => {
+    const { error } = await supabase.from("check_status_logs").delete().eq("id", id);
+    if (error) {
+      toast({ title: "Gagal menghapus", description: error.message, variant: "destructive" });
+    } else {
+      setLogs(prev => prev.filter(l => l.id !== id));
+      toast({ title: "Log dihapus" });
+    }
+  };
+
   const filtered = logs.filter(l =>
     l.token_code.toLowerCase().includes(search.toLowerCase()) ||
     (l.submission_name || "").toLowerCase().includes(search.toLowerCase())
@@ -156,7 +166,8 @@ export function CheckStatusLogs() {
                     <TableHead>Waktu</TableHead>
                     <TableHead>Token</TableHead>
                     <TableHead>Nama</TableHead>
-                    <TableHead>Hasil</TableHead>
+                     <TableHead>Hasil</TableHead>
+                     <TableHead className="w-12"></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -176,6 +187,16 @@ export function CheckStatusLogs() {
                         <TableCell className="text-sm">{log.submission_name || "-"}</TableCell>
                         <TableCell>
                           <Badge variant={r.variant}>{r.label}</Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => deleteLog(log.id)}
+                            className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
                         </TableCell>
                       </TableRow>
                     );

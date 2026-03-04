@@ -27,13 +27,35 @@ const PeraihBeasiswa = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [recipients, setRecipients] = useState<Recipient[]>([]);
   const [activeCategory, setActiveCategory] = useState<"all" | ScholarshipCategory>("all");
+  const [isPageActive, setIsPageActive] = useState(false);
 
   useEffect(() => {
-    fetchRecipients();
+    checkPageActive();
   }, []);
 
-  const fetchRecipients = async () => {
+  const checkPageActive = async () => {
     setIsLoading(true);
+    try {
+      const { data } = await supabase
+        .from("admin_settings")
+        .select("setting_value")
+        .eq("setting_key", "peraih_beasiswa_page")
+        .maybeSingle();
+
+      const active = (data?.setting_value as any)?.is_active === true;
+      setIsPageActive(active);
+
+      if (active) {
+        await fetchRecipients();
+      }
+    } catch (error) {
+      console.error("Error:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const fetchRecipients = async () => {
     try {
       const { data, error } = await supabase
         .from("scholarship_submissions")
@@ -45,8 +67,6 @@ const PeraihBeasiswa = () => {
       setRecipients((data || []) as Recipient[]);
     } catch (error) {
       console.error("Error:", error);
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -59,6 +79,24 @@ const PeraihBeasiswa = () => {
     ekonomi: recipients.filter(r => r.category === "ekonomi").length,
     umum: recipients.filter(r => r.category === "umum").length,
   };
+
+  if (!isLoading && !isPageActive) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col">
+        <Navbar />
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center px-4">
+            <Award className="w-20 h-20 mx-auto text-muted-foreground/20 mb-6" />
+            <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-3">Halaman Belum Tersedia</h1>
+            <p className="text-muted-foreground max-w-md mx-auto">
+              Pengumuman kandidat peraih beasiswa belum dibuka. Silakan cek kembali nanti.
+            </p>
+          </div>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
