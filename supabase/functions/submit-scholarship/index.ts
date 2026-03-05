@@ -110,15 +110,26 @@ serve(async (req) => {
       throw insertError;
     }
 
-    // Send WhatsApp notification
+    // Send WhatsApp notification via send-whatsapp edge function
     try {
-      const { data: settings } = await supabase.from("admin_settings").select("*");
+      const { data: settings } = await supabase.from("admin_settings").select("setting_key, setting_value");
 
-      const apiUrl = settings?.find((s) => s.setting_key === "onesender_api_url")?.setting_value;
-      const apiKey = settings?.find((s) => s.setting_key === "onesender_api_key")?.setting_value;
-      const phoneNumber = settings?.find((s) => s.setting_key === "onesender_phone")?.setting_value;
-      const template = settings?.find((s) => s.setting_key === "whatsapp_template")?.setting_value;
-      const whatsappEnabled = settings?.find((s) => s.setting_key === "whatsapp_enabled")?.setting_value;
+      const getVal = (key: string): string => {
+        const found = settings?.find((s: any) => s.setting_key === key)?.setting_value;
+        if (!found) return "";
+        if (typeof found === "string") return found;
+        return String(found.value ?? "");
+      };
+      const getBool = (key: string): boolean => {
+        const found = settings?.find((s: any) => s.setting_key === key)?.setting_value;
+        const v = typeof found === "object" ? found?.value : found;
+        return v === true || v === "true";
+      };
+
+      const isEnabled = getBool("whatsapp_enabled");
+      const template = getVal("whatsapp_template");
+      const apiUrl = getVal("onesender_api_url");
+      const apiKey = getVal("onesender_api_key");
 
       const onlyDigits = (v: string) => (v || "").replace(/\D/g, "");
       const normalizeIndoPhone = (v: string) => {
@@ -129,13 +140,9 @@ serve(async (req) => {
         return d;
       };
 
-      // Check if WhatsApp is enabled
-      const isEnabled = whatsappEnabled?.value === true || whatsappEnabled?.value === "true";
-
-      const sender = normalizeIndoPhone(String(phoneNumber?.value || ""));
       const recipient = normalizeIndoPhone(String(phone || ""));
 
-      if (isEnabled && apiUrl?.value && apiKey?.value && sender && template?.value && recipient) {
+      if (isEnabled && apiUrl && apiKey && template && recipient) {
         const categoryLabels: Record<string, string> = {
           prestasi: "Prestasi",
           yatim: "Yatim",
@@ -143,7 +150,7 @@ serve(async (req) => {
           umum: "Umum",
         };
 
-        const message = template.value
+        const message = template
           .replace(/\{\{nama\}\}/g, fullName)
           .replace(/\{\{kategori_beasiswa\}\}/g, categoryLabels[category] || category)
           .replace(/\{\{status_pendaftar\}\}/g, applicantStatus.replace("_", " "))
@@ -152,16 +159,20 @@ serve(async (req) => {
 
         console.log("Sending WhatsApp to:", recipient);
 
-        const waResponse = await fetch(apiUrl.value, {
+        // Use OneSender API format per documentation
+        const waResponse = await fetch(apiUrl, {
           method: "POST",
           headers: {
-            "Authorization": `Bearer ${apiKey.value}`,
+            "Authorization": `Bearer ${apiKey}`,
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            phone: recipient,
-            message,
-            sender,
+            recipient_type: "individual",
+            to: recipient,
+            type: "text",
+            text: {
+              body: message,
+            },
           }),
         });
 
@@ -186,10 +197,9 @@ serve(async (req) => {
         console.log("WhatsApp notifications are disabled");
       } else {
         console.log("WhatsApp not sent: missing config/phone", {
-          hasApiUrl: !!apiUrl?.value,
-          hasApiKey: !!apiKey?.value,
-          hasSender: !!sender,
-          hasTemplate: !!template?.value,
+          hasApiUrl: !!apiUrl,
+          hasApiKey: !!apiKey,
+          hasTemplate: !!template,
           hasRecipient: !!recipient,
         });
       }

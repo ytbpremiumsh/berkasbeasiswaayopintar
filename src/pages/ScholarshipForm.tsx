@@ -355,6 +355,18 @@ const ScholarshipForm = () => {
         
         return (
           <div className="space-y-6 animate-fade-in">
+            {/* Google Drive Instructions */}
+            <div className="bg-primary/5 border border-primary/20 rounded-md p-3 space-y-1">
+              <p className="text-xs font-medium text-foreground flex items-center gap-1.5">
+                <CheckCircle className="w-3.5 h-3.5 text-primary" />
+                Link Google Drive
+              </p>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Anda dapat mengupload berkas ke <span className="font-medium text-foreground">Google Drive</span> terlebih dahulu, lalu tempelkan link-nya pada form. 
+                Pastikan setiap jenis berkas dimasukkan ke <span className="font-medium text-foreground">folder terpisah</span> dan akses file diatur ke <span className="font-medium text-foreground">"Anyone with the link"</span> agar tim kami dapat mengakses berkas Anda.
+              </p>
+            </div>
+
             {/* Kartu Identitas untuk Pelajar */}
             {isPelajar && isFieldActive("kartu_pelajar_url") && (
               <DynamicFormField
