@@ -257,6 +257,78 @@ export type Database = {
         }
         Relationships: []
       }
+      registration_fields: {
+        Row: {
+          category: string
+          created_at: string
+          description: string | null
+          display_order: number
+          field_label: string
+          field_name: string
+          field_type: string
+          id: string
+          is_active: boolean
+          is_required: boolean
+          options: Json | null
+          placeholder: string | null
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          field_label: string
+          field_name: string
+          field_type?: string
+          id?: string
+          is_active?: boolean
+          is_required?: boolean
+          options?: Json | null
+          placeholder?: string | null
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          field_label?: string
+          field_name?: string
+          field_type?: string
+          id?: string
+          is_active?: boolean
+          is_required?: boolean
+          options?: Json | null
+          placeholder?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      registrations: {
+        Row: {
+          category: string
+          created_at: string
+          form_data: Json
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          form_data?: Json
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          form_data?: Json
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       scholarship_submissions: {
         Row: {
           admin_notes: string | null
