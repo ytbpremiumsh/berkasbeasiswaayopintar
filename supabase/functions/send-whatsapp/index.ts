@@ -20,7 +20,6 @@ function normalizeIndoPhone(input: string) {
 
 function getSettingValue(settings: any[], key: string): string {
   const found = settings?.find((s) => s.setting_key === key)?.setting_value;
-  // setting_value stored as { value: ... }
   if (!found) return "";
   if (typeof found === "string") return found;
   return String(found.value ?? "");
@@ -77,12 +76,10 @@ serve(async (req) => {
 
     const apiUrl = getSettingValue(settings || [], "onesender_api_url");
     const apiKey = getSettingValue(settings || [], "onesender_api_key");
-    const senderRaw = getSettingValue(settings || [], "onesender_phone");
 
-    const sender = normalizeIndoPhone(senderRaw);
     const phone = normalizeIndoPhone(rawPhone);
 
-    if (!apiUrl || !apiKey || !sender) {
+    if (!apiUrl || !apiKey) {
       return new Response(
         JSON.stringify({ success: false, message: "Konfigurasi OneSender belum lengkap" }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 },
@@ -96,8 +93,9 @@ serve(async (req) => {
       );
     }
 
-    console.log("[send-whatsapp] sending", { to: phone, sender });
+    console.log("[send-whatsapp] sending", { to: phone });
 
+    // Use OneSender API format per documentation
     const waResponse = await fetch(apiUrl, {
       method: "POST",
       headers: {
@@ -105,9 +103,12 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        phone,
-        message,
-        sender,
+        recipient_type: "individual",
+        to: phone,
+        type: "text",
+        text: {
+          body: message,
+        },
       }),
     });
 
@@ -120,7 +121,7 @@ serve(async (req) => {
 
     await supabase.from("whatsapp_logs").insert({
       recipient_phone: phone,
-      recipient_name: recipientName,
+      recipient_name: recipientName || "Unknown",
       message,
       status: waResponse.ok ? "success" : "failed",
       error_message: waResponse.ok ? null : JSON.stringify(waResult),
