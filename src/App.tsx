@@ -13,6 +13,7 @@ import CheckStatus from "./pages/CheckStatus";
 import ShortlinkRedirect from "./pages/ShortlinkRedirect";
 import NotFound from "./pages/NotFound";
 import PeraihBeasiswa from "./pages/PeraihBeasiswa";
+import RegistrationForm from "./pages/RegistrationForm";
 
 const queryClient = new QueryClient();
 
