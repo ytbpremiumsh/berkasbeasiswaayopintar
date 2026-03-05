@@ -41,6 +41,15 @@ const menuGroups = [
     ],
   },
   {
+    id: "registration",
+    label: "Pendaftaran",
+    items: [
+      { id: "reg-entries", label: "Data Pendaftaran", icon: ClipboardList },
+      { id: "reg-fields", label: "Kelola Form", icon: UserPlus },
+      { id: "reg-embed", label: "Embed Pendaftaran", icon: Code },
+    ],
+  },
+  {
     id: "system",
     label: "Sistem",
     items: [
