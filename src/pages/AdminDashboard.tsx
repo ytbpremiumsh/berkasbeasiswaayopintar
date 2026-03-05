@@ -29,6 +29,9 @@ import { AdminSettings } from "@/components/admin/AdminSettings";
 import { EmbedManager } from "@/components/admin/EmbedManager";
 import { CheckStatusLogs } from "@/components/admin/CheckStatusLogs";
 import { CandidateRecipients } from "@/components/admin/CandidateRecipients";
+import { RegistrationFieldsManager } from "@/components/admin/RegistrationFieldsManager";
+import { RegistrationEntries } from "@/components/admin/RegistrationEntries";
+import { RegistrationEmbedManager } from "@/components/admin/RegistrationEmbedManager";
 import * as XLSX from "xlsx";
 import { cn } from "@/lib/utils";
 import { 
@@ -734,6 +737,11 @@ const AdminDashboard = () => {
 
           {/* Candidate Recipients */}
           {activeTab === "candidates" && <CandidateRecipients />}
+
+          {/* Registration */}
+          {activeTab === "reg-entries" && <RegistrationEntries />}
+          {activeTab === "reg-fields" && <RegistrationFieldsManager />}
+          {activeTab === "reg-embed" && <RegistrationEmbedManager />}
 
           {/* All Submissions */}
           {activeTab === "all-submissions" && <AllSubmissions onStatusUpdate={fetchData} />}

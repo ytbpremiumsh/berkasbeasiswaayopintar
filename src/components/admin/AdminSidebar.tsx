@@ -1,4 +1,4 @@
-import { FileText, Key, FormInput, Settings, LayoutDashboard, LogOut, CheckSquare, Copy, BadgeCheck, PanelLeftClose, PanelLeft, Users, MonitorPlay, Wallet, ChevronDown, Image, Link2, ListChecks, Clock, MessageCircle, Code, Eye, Trophy } from "lucide-react";
+import { FileText, Key, FormInput, Settings, LayoutDashboard, LogOut, CheckSquare, Copy, BadgeCheck, PanelLeftClose, PanelLeft, Users, MonitorPlay, Wallet, ChevronDown, Image, Link2, ListChecks, Clock, MessageCircle, Code, Eye, Trophy, ClipboardList, UserPlus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -41,6 +41,15 @@ const menuGroups = [
     ],
   },
   {
+    id: "registration",
+    label: "Pendaftaran",
+    items: [
+      { id: "reg-entries", label: "Data Pendaftaran", icon: ClipboardList },
+      { id: "reg-fields", label: "Kelola Form", icon: UserPlus },
+      { id: "reg-embed", label: "Embed Pendaftaran", icon: Code },
+    ],
+  },
+  {
     id: "system",
     label: "Sistem",
     items: [
@@ -69,6 +78,7 @@ export function AdminSidebar({ activeTab, onTabChange, onLogout, isCollapsed = f
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({
     main: true,
     mayar: true,
+    registration: true,
     system: true,
   });
 
