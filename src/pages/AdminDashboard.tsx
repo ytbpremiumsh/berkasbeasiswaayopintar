@@ -738,6 +738,11 @@ const AdminDashboard = () => {
           {/* Candidate Recipients */}
           {activeTab === "candidates" && <CandidateRecipients />}
 
+          {/* Registration */}
+          {activeTab === "reg-entries" && <RegistrationEntries />}
+          {activeTab === "reg-fields" && <RegistrationFieldsManager />}
+          {activeTab === "reg-embed" && <RegistrationEmbedManager />}
+
           {/* All Submissions */}
           {activeTab === "all-submissions" && <AllSubmissions onStatusUpdate={fetchData} />}
         </main>

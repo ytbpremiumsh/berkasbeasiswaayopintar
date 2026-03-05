@@ -34,6 +34,7 @@ const App = () => (
           <Route path="/admin/login" element={<AdminLogin />} />
           <Route path="/admin" element={<AdminDashboard />} />
           <Route path="/peraih-beasiswa" element={<PeraihBeasiswa />} />
+          <Route path="/daftar/:category" element={<RegistrationForm />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
