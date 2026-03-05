@@ -78,6 +78,7 @@ export function AdminSidebar({ activeTab, onTabChange, onLogout, isCollapsed = f
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({
     main: true,
     mayar: true,
+    registration: true,
     system: true,
   });
 

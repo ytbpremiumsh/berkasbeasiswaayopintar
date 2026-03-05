@@ -15,7 +15,7 @@ type ScholarshipCategory = "prestasi" | "yatim" | "ekonomi" | "umum";
 interface Registration {
   id: string;
   category: string;
-  form_data: Record<string, any>;
+  form_data: any;
   created_at: string;
 }
 
