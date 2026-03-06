@@ -63,6 +63,7 @@ const menuGroups = [
       { id: "adsense", label: "Kelola AdSense", icon: MonitorPlay },
       { id: "embed", label: "Embed Form", icon: Code },
       { id: "check-logs", label: "Log Cek Status", icon: Eye },
+      { id: "external-apps", label: "Aplikasi Eksternal", icon: AppWindow },
     ],
   },
   {

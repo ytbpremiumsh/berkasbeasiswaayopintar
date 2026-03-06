@@ -744,6 +744,9 @@ const AdminDashboard = () => {
           {activeTab === "reg-fields" && <RegistrationFieldsManager />}
           {activeTab === "reg-embed" && <RegistrationEmbedManager />}
 
+          {/* External Apps */}
+          {activeTab === "external-apps" && <ExternalAppsManager />}
+
           {/* All Submissions */}
           {activeTab === "all-submissions" && <AllSubmissions onStatusUpdate={fetchData} />}
         </main>
