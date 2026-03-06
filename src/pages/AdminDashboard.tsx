@@ -32,6 +32,7 @@ import { CandidateRecipients } from "@/components/admin/CandidateRecipients";
 import { RegistrationFieldsManager } from "@/components/admin/RegistrationFieldsManager";
 import { RegistrationEntries } from "@/components/admin/RegistrationEntries";
 import { RegistrationEmbedManager } from "@/components/admin/RegistrationEmbedManager";
+import { ExternalAppsManager } from "@/components/admin/ExternalAppsManager";
 import * as XLSX from "xlsx";
 import { cn } from "@/lib/utils";
 import { 
