@@ -373,8 +373,8 @@ const AdminDashboard = () => {
           {activeTab === "submissions" && (
             <div className="space-y-6">
               <div>
-                <h1 className="text-2xl font-bold text-foreground">Data Pengajuan</h1>
-                <p className="text-muted-foreground">Kelola pengajuan beasiswa dari semua kategori</p>
+                <h1 className="text-xl sm:text-2xl font-bold text-foreground">Data Pengajuan</h1>
+                <p className="text-sm text-muted-foreground">Kelola pengajuan beasiswa dari semua kategori</p>
               </div>
 
               {/* Category Selection */}
