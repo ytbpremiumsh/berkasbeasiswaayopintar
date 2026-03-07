@@ -626,10 +626,10 @@ const AdminDashboard = () => {
                 <CardHeader>
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <CardTitle>Tambah Token Baru</CardTitle>
-                    <div className="flex gap-2">
-                      <Input placeholder="Kode token baru" value={newTokenCode} onChange={(e) => setNewTokenCode(e.target.value.toUpperCase())} className="w-[160px] uppercase" />
+                    <div className="flex flex-wrap gap-2">
+                      <Input placeholder="Kode token baru" value={newTokenCode} onChange={(e) => setNewTokenCode(e.target.value.toUpperCase())} className="w-full sm:w-[160px] uppercase" />
                       <Select value={newTokenCategory} onValueChange={(v) => setNewTokenCategory(v as ScholarshipCategory)}>
-                        <SelectTrigger className="w-[130px]">
+                        <SelectTrigger className="w-full sm:w-[130px]">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent className="bg-card border">
