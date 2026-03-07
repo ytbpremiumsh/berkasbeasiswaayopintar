@@ -543,7 +543,7 @@ const AdminDashboard = () => {
                                     </DialogHeader>
                                     {selectedSubmission && (
                                       <div className="space-y-4">
-                                        <div className="grid grid-cols-2 gap-4 text-sm">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 text-sm">
                                           <div><span className="text-muted-foreground">Nama:</span> <strong>{selectedSubmission.full_name}</strong></div>
                                           <div><span className="text-muted-foreground">Email:</span> <strong>{selectedSubmission.email}</strong></div>
                                           <div><span className="text-muted-foreground">Telepon:</span> <strong>{selectedSubmission.phone || "-"}</strong></div>
