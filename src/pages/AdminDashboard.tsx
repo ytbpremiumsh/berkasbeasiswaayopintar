@@ -358,7 +358,7 @@ const AdminDashboard = () => {
         )}
 
         {/* Content Area - Scrollable */}
-        <main className="flex-1 overflow-y-auto p-6">
+        <main className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6">
           {/* Dashboard */}
           {activeTab === "dashboard" && (
             <AnalyticsDashboard 
@@ -373,8 +373,8 @@ const AdminDashboard = () => {
           {activeTab === "submissions" && (
             <div className="space-y-6">
               <div>
-                <h1 className="text-2xl font-bold text-foreground">Data Pengajuan</h1>
-                <p className="text-muted-foreground">Kelola pengajuan beasiswa dari semua kategori</p>
+                <h1 className="text-xl sm:text-2xl font-bold text-foreground">Data Pengajuan</h1>
+                <p className="text-sm text-muted-foreground">Kelola pengajuan beasiswa dari semua kategori</p>
               </div>
 
               {/* Category Selection */}
@@ -537,13 +537,13 @@ const AdminDashboard = () => {
                                       <Eye className="w-4 h-4" />
                                     </Button>
                                   </DialogTrigger>
-                                  <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                                  <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[80vh] overflow-y-auto">
                                     <DialogHeader>
                                       <DialogTitle>Detail Pengajuan</DialogTitle>
                                     </DialogHeader>
                                     {selectedSubmission && (
                                       <div className="space-y-4">
-                                        <div className="grid grid-cols-2 gap-4 text-sm">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 text-sm">
                                           <div><span className="text-muted-foreground">Nama:</span> <strong>{selectedSubmission.full_name}</strong></div>
                                           <div><span className="text-muted-foreground">Email:</span> <strong>{selectedSubmission.email}</strong></div>
                                           <div><span className="text-muted-foreground">Telepon:</span> <strong>{selectedSubmission.phone || "-"}</strong></div>
@@ -618,18 +618,18 @@ const AdminDashboard = () => {
           {activeTab === "tokens" && (
             <div className="space-y-6">
               <div>
-                <h1 className="text-2xl font-bold text-foreground">Manajemen Token</h1>
-                <p className="text-muted-foreground">Kelola kode token untuk validasi pendaftaran</p>
+                <h1 className="text-xl sm:text-2xl font-bold text-foreground">Manajemen Token</h1>
+                <p className="text-sm text-muted-foreground">Kelola kode token untuk validasi pendaftaran</p>
               </div>
 
               <Card>
                 <CardHeader>
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <CardTitle>Tambah Token Baru</CardTitle>
-                    <div className="flex gap-2">
-                      <Input placeholder="Kode token baru" value={newTokenCode} onChange={(e) => setNewTokenCode(e.target.value.toUpperCase())} className="w-[160px] uppercase" />
+                    <div className="flex flex-wrap gap-2">
+                      <Input placeholder="Kode token baru" value={newTokenCode} onChange={(e) => setNewTokenCode(e.target.value.toUpperCase())} className="w-full sm:w-[160px] uppercase" />
                       <Select value={newTokenCategory} onValueChange={(v) => setNewTokenCategory(v as ScholarshipCategory)}>
-                        <SelectTrigger className="w-[130px]">
+                        <SelectTrigger className="w-full sm:w-[130px]">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent className="bg-card border">
@@ -654,6 +654,7 @@ const AdminDashboard = () => {
                   </div>
                 </CardHeader>
                 <CardContent>
+                  <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
                       <TableRow>
@@ -686,6 +687,7 @@ const AdminDashboard = () => {
                       })}
                     </TableBody>
                   </Table>
+                  </div>
                 </CardContent>
               </Card>
             </div>
