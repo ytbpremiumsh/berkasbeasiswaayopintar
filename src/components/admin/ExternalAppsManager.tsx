@@ -98,30 +98,80 @@ export function ExternalAppsManager() {
     }
   };
 
-  // If viewing an app iframe
+  const [iframeError, setIframeError] = useState(false);
+
+  const openInPopup = (app: ExternalApp) => {
+    const w = Math.min(window.innerWidth * 0.9, 1200);
+    const h = Math.min(window.innerHeight * 0.9, 800);
+    const left = (window.innerWidth - w) / 2 + window.screenX;
+    const top = (window.innerHeight - h) / 2 + window.screenY;
+    window.open(
+      app.url,
+      app.title,
+      `width=${w},height=${h},left=${left},top=${top},menubar=no,toolbar=no,location=yes,status=no,resizable=yes,scrollbars=yes`
+    );
+  };
+
+  // If viewing an app
   if (activeApp) {
     return (
       <div className="space-y-4 h-full">
         <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => setActiveApp(null)}>
+          <Button variant="ghost" size="icon" onClick={() => { setActiveApp(null); setIframeError(false); }}>
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <div className="flex-1">
             <h1 className="text-xl font-bold text-foreground">{activeApp.title}</h1>
             {activeApp.description && <p className="text-sm text-muted-foreground">{activeApp.description}</p>}
           </div>
-          <Button variant="outline" size="sm" onClick={() => window.open(activeApp.url, "_blank")}>
-            <ExternalLink className="w-4 h-4 mr-1" /> Buka di Tab Baru
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={() => openInPopup(activeApp)}>
+              <ExternalLink className="w-4 h-4 mr-1" /> Buka di Popup
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => window.open(activeApp.url, "_blank")}>
+              <ExternalLink className="w-4 h-4 mr-1" /> Tab Baru
+            </Button>
+          </div>
         </div>
-        <div className="border rounded-lg overflow-hidden bg-background" style={{ height: "calc(100vh - 180px)" }}>
-          <iframe
-            src={activeApp.url}
-            className="w-full h-full border-0"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            allowFullScreen
-          />
-        </div>
+        {iframeError ? (
+          <div className="border rounded-lg bg-muted/50 flex flex-col items-center justify-center gap-4" style={{ height: "calc(100vh - 180px)" }}>
+            <Globe className="w-16 h-16 text-muted-foreground/50" />
+            <p className="text-muted-foreground font-medium">Situs ini tidak dapat ditampilkan dalam iframe</p>
+            <p className="text-sm text-muted-foreground">Situs memblokir akses iframe untuk keamanan. Gunakan opsi di bawah:</p>
+            <div className="flex gap-3">
+              <Button onClick={() => openInPopup(activeApp)}>
+                <ExternalLink className="w-4 h-4 mr-1" /> Buka di Popup Window
+              </Button>
+              <Button variant="outline" onClick={() => window.open(activeApp.url, "_blank")}>
+                Buka di Tab Baru
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <div className="border rounded-lg overflow-hidden bg-background" style={{ height: "calc(100vh - 180px)" }}>
+            <iframe
+              src={activeApp.url}
+              className="w-full h-full border-0"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; cross-origin-isolated"
+              allowFullScreen
+              sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-popups-to-escape-sandbox allow-storage-access-by-user-activation allow-modals allow-downloads"
+              referrerPolicy="no-referrer-when-downgrade"
+              onError={() => setIframeError(true)}
+              onLoad={(e) => {
+                try {
+                  const iframe = e.target as HTMLIFrameElement;
+                  // If we can't access contentWindow, iframe likely blocked
+                  if (iframe.contentWindow && iframe.contentDocument === null) {
+                    setIframeError(true);
+                  }
+                } catch {
+                  // Cross-origin - iframe loaded but may be blocked
+                  // Don't set error here as some sites work fine cross-origin
+                }
+              }}
+            />
+          </div>
+        )}
       </div>
     );
   }
