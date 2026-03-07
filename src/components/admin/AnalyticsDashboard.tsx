@@ -75,7 +75,7 @@ export function AnalyticsDashboard({ categoryStats, totalTokens, usedTokens, rec
 
       {/* Main Stats Card - Compact Infographic Style */}
       <Card className="overflow-hidden">
-        <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent p-6">
+        <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent p-3 sm:p-6">
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
             {/* Total Submissions */}
             <div className="col-span-2 flex items-center gap-4 p-4 bg-card rounded-xl shadow-sm">
