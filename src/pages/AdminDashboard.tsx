@@ -537,7 +537,7 @@ const AdminDashboard = () => {
                                       <Eye className="w-4 h-4" />
                                     </Button>
                                   </DialogTrigger>
-                                  <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                                  <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[80vh] overflow-y-auto">
                                     <DialogHeader>
                                       <DialogTitle>Detail Pengajuan</DialogTitle>
                                     </DialogHeader>
