@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "@/hooks/use-toast";
-import { Plus, Pencil, Trash2, ExternalLink, Loader2, Globe, ArrowLeft } from "lucide-react";
+import { Plus, Pencil, Trash2, ExternalLink, Loader2, Globe, ArrowLeft, RefreshCw } from "lucide-react";
 
 interface ExternalApp {
   id: string;
@@ -98,96 +98,56 @@ export function ExternalAppsManager() {
     }
   };
 
-  const [iframeError, setIframeError] = useState(false);
+  const [iframeKey, setIframeKey] = useState(0);
 
-  const openInPopup = (app: ExternalApp) => {
-    const w = Math.min(window.innerWidth * 0.9, 1200);
-    const h = Math.min(window.innerHeight * 0.9, 800);
-    const left = (window.innerWidth - w) / 2 + window.screenX;
-    const top = (window.innerHeight - h) / 2 + window.screenY;
-    window.open(
-      app.url,
-      app.title,
-      `width=${w},height=${h},left=${left},top=${top},menubar=no,toolbar=no,location=yes,status=no,resizable=yes,scrollbars=yes`
-    );
-  };
-
-  // If viewing an app
+  // If viewing an app - use full page iframe without fallback
   if (activeApp) {
     return (
-      <div className="space-y-4 h-full">
-        <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => { setActiveApp(null); setIframeError(false); }}>
+      <div className="flex flex-col h-full">
+        <div className="flex items-center gap-2 sm:gap-3 flex-wrap pb-3">
+          <Button variant="ghost" size="icon" className="shrink-0" onClick={() => setActiveApp(null)}>
             <ArrowLeft className="w-5 h-5" />
           </Button>
-          <div className="flex-1">
-            <h1 className="text-xl font-bold text-foreground">{activeApp.title}</h1>
-            {activeApp.description && <p className="text-sm text-muted-foreground">{activeApp.description}</p>}
+          <div className="flex-1 min-w-0">
+            <h1 className="text-base sm:text-xl font-bold text-foreground truncate">{activeApp.title}</h1>
+            {activeApp.description && <p className="text-xs sm:text-sm text-muted-foreground truncate">{activeApp.description}</p>}
           </div>
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={() => openInPopup(activeApp)}>
-              <ExternalLink className="w-4 h-4 mr-1" /> Buka di Popup
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => window.open(activeApp.url, "_blank")}>
-              <ExternalLink className="w-4 h-4 mr-1" /> Tab Baru
-            </Button>
-          </div>
+          <Button variant="outline" size="sm" className="shrink-0" onClick={() => setIframeKey(k => k + 1)}>
+            <RefreshCw className="w-4 h-4 sm:mr-1" />
+            <span className="hidden sm:inline">Refresh</span>
+          </Button>
         </div>
-        {iframeError ? (
-          <div className="border rounded-lg bg-muted/50 flex flex-col items-center justify-center gap-4" style={{ height: "calc(100vh - 180px)" }}>
-            <Globe className="w-16 h-16 text-muted-foreground/50" />
-            <p className="text-muted-foreground font-medium">Situs ini tidak dapat ditampilkan dalam iframe</p>
-            <p className="text-sm text-muted-foreground">Situs memblokir akses iframe untuk keamanan. Gunakan opsi di bawah:</p>
-            <div className="flex gap-3">
-              <Button onClick={() => openInPopup(activeApp)}>
-                <ExternalLink className="w-4 h-4 mr-1" /> Buka di Popup Window
-              </Button>
-              <Button variant="outline" onClick={() => window.open(activeApp.url, "_blank")}>
-                Buka di Tab Baru
-              </Button>
-            </div>
-          </div>
-        ) : (
-          <div className="border rounded-lg overflow-hidden bg-background" style={{ height: "calc(100vh - 180px)" }}>
-            <iframe
-              src={activeApp.url}
-              className="w-full h-full border-0"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; cross-origin-isolated"
-              allowFullScreen
-              sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-popups-to-escape-sandbox allow-storage-access-by-user-activation allow-modals allow-downloads"
-              referrerPolicy="no-referrer-when-downgrade"
-              onError={() => setIframeError(true)}
-              onLoad={(e) => {
-                try {
-                  const iframe = e.target as HTMLIFrameElement;
-                  // If we can't access contentWindow, iframe likely blocked
-                  if (iframe.contentWindow && iframe.contentDocument === null) {
-                    setIframeError(true);
-                  }
-                } catch {
-                  // Cross-origin - iframe loaded but may be blocked
-                  // Don't set error here as some sites work fine cross-origin
-                }
-              }}
-            />
-          </div>
-        )}
+        <div className="flex-1 border rounded-lg overflow-hidden bg-background" style={{ minHeight: "calc(100vh - 180px)" }}>
+          <iframe
+            key={iframeKey}
+            src={activeApp.url}
+            className="w-full h-full border-0"
+            style={{ minHeight: "calc(100vh - 180px)" }}
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+            referrerPolicy="no-referrer-when-downgrade"
+          />
+        </div>
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Aplikasi Eksternal</h1>
-          <p className="text-muted-foreground">Simpan URL eksternal dan tampilkan sebagai iframe</p>
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="text-xl sm:text-2xl font-bold text-foreground">Aplikasi Eksternal</h1>
+          <p className="text-sm text-muted-foreground">Simpan URL eksternal dan tampilkan langsung</p>
         </div>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
-            <Button onClick={openAdd}><Plus className="w-4 h-4 mr-1" /> Tambah Aplikasi</Button>
+            <Button onClick={openAdd} size="sm" className="shrink-0">
+              <Plus className="w-4 h-4 mr-1" />
+              <span className="hidden sm:inline">Tambah Aplikasi</span>
+              <span className="sm:hidden">Tambah</span>
+            </Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="max-w-[95vw] sm:max-w-lg">
             <DialogHeader>
               <DialogTitle>{editingApp ? "Edit Aplikasi" : "Tambah Aplikasi"}</DialogTitle>
             </DialogHeader>
@@ -232,7 +192,7 @@ export function ExternalAppsManager() {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {apps.map(app => (
             <Card key={app.id} className={`cursor-pointer transition-all hover:shadow-lg group ${!app.is_active ? "opacity-60" : ""}`}>
               <CardHeader className="pb-2">
