@@ -66,7 +66,7 @@ export function AnalyticsDashboard({ categoryStats, totalTokens, usedTokens, rec
       {/* Compact Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-foreground">Dashboard</h1>
           <p className="text-sm text-muted-foreground">{new Date().toLocaleDateString("id-ID", { 
             weekday: "long", day: "numeric", month: "long", year: "numeric" 
           })}</p>
