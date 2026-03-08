@@ -62,9 +62,10 @@ interface Submission {
 
 interface AllSubmissionsProps {
   onStatusUpdate: () => void;
+  programId?: string | null;
 }
 
-export function AllSubmissions({ onStatusUpdate }: AllSubmissionsProps) {
+export function AllSubmissions({ onStatusUpdate, programId }: AllSubmissionsProps) {
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [filterCategory, setFilterCategory] = useState<"all" | ScholarshipCategory>("all");
@@ -75,7 +76,7 @@ export function AllSubmissions({ onStatusUpdate }: AllSubmissionsProps) {
 
   useEffect(() => {
     fetchSubmissions();
-  }, []);
+  }, [programId]);
 
   const fetchSubmissions = async () => {
     setIsLoading(true);
