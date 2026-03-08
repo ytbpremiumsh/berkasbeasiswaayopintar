@@ -258,6 +258,7 @@ const AdminDashboard = () => {
       const { error } = await supabase.from("scholarship_tokens").insert({
         token_code: newTokenCode.toUpperCase(),
         category: newTokenCategory,
+        program_id: selectedProgramId,
       });
 
       if (error) throw error;
