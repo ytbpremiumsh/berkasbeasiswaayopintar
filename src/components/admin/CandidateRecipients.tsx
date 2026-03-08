@@ -50,19 +50,19 @@ interface CandidateSubmission {
   verified_by_name?: string;
 }
 
-export function CandidateRecipients() {
+export function CandidateRecipients({ programId }: { programId?: string | null }) {
   const [isLoading, setIsLoading] = useState(true);
   const [submissions, setSubmissions] = useState<CandidateSubmission[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<"all" | ScholarshipCategory>("all");
 
   useEffect(() => {
     fetchCandidates();
-  }, []);
+  }, [programId]);
 
   const fetchCandidates = async () => {
     setIsLoading(true);
     try {
-      const { data: subs, error } = await supabase
+      let query = supabase
         .from("scholarship_submissions")
         .select(`
           id, full_name, email, phone, category, applicant_status, institution_name,
@@ -74,6 +74,12 @@ export function CandidateRecipients() {
         `)
         .eq("status", "kandidat_peraih")
         .order("submitted_at", { ascending: false });
+
+      if (programId) {
+        query = query.eq("program_id", programId);
+      }
+
+      const { data: subs, error } = await query;
 
       if (error) throw error;
 

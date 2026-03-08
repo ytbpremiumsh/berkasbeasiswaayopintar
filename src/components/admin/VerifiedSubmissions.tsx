@@ -51,19 +51,19 @@ interface VerifiedSubmission {
   verified_by_name?: string;
 }
 
-export function VerifiedSubmissions() {
+export function VerifiedSubmissions({ programId }: { programId?: string | null }) {
   const [isLoading, setIsLoading] = useState(true);
   const [submissions, setSubmissions] = useState<VerifiedSubmission[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<"all" | ScholarshipCategory>("all");
 
   useEffect(() => {
     fetchVerified();
-  }, []);
+  }, [programId]);
 
   const fetchVerified = async () => {
     setIsLoading(true);
     try {
-      const { data: subs, error } = await supabase
+      let query = supabase
         .from("scholarship_submissions")
         .select(`
           id, full_name, email, phone, category, applicant_status, institution_name,
@@ -75,6 +75,12 @@ export function VerifiedSubmissions() {
         `)
         .eq("status", "diverifikasi")
         .order("submitted_at", { ascending: false });
+
+      if (programId) {
+        query = query.eq("program_id", programId);
+      }
+
+      const { data: subs, error } = await query;
 
       if (error) throw error;
 
