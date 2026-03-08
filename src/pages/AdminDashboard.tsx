@@ -188,13 +188,16 @@ const AdminDashboard = () => {
 
       setCategoryStats(stats);
 
-      const { data: toks, error: toksError } = await supabase
+      let toksQuery = supabase
         .from("scholarship_tokens")
         .select("*")
         .order("created_at", { ascending: false });
 
-      if (toksError) throw toksError;
-      setTokens(toks || []);
+      if (selectedProgramId) {
+        toksQuery = toksQuery.eq("program_id", selectedProgramId);
+      }
+
+      const { data: toks, error: toksError } = await toksQuery;
 
       // Fetch settings
       const { data: settings } = await supabase.from("admin_settings").select("*");
