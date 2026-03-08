@@ -384,6 +384,11 @@ const AdminDashboard = () => {
           </div>
         )}
 
+        {/* Program Selector Bar */}
+        <div className="bg-card border-b px-3 sm:px-4 md:px-6 py-2 flex items-center gap-3">
+          <ProgramSelector selectedProgramId={selectedProgramId} onProgramChange={setSelectedProgramId} />
+        </div>
+
         {/* Content Area - Scrollable */}
         <main className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6">
           {/* Dashboard */}
