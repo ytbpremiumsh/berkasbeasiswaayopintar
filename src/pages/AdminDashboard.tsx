@@ -93,8 +93,11 @@ const AdminDashboard = () => {
 
   useEffect(() => {
     checkAccess();
-    fetchData();
   }, []);
+
+  useEffect(() => {
+    if (selectedProgramId) fetchData();
+  }, [selectedProgramId]);
 
   const checkAccess = async () => {
     const { data: { session } } = await supabase.auth.getSession();
