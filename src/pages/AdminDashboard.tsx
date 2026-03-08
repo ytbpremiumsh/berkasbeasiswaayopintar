@@ -199,7 +199,9 @@ const AdminDashboard = () => {
 
       const { data: toks, error: toksError } = await toksQuery;
 
-      // Fetch settings
+      if (toksError) throw toksError;
+      setTokens(toks || []);
+
       const { data: settings } = await supabase.from("admin_settings").select("*");
       if (settings) {
         const apiUrl = settings.find(s => s.setting_key === "onesender_api_url");
