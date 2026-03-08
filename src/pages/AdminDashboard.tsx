@@ -74,6 +74,7 @@ const AdminDashboard = () => {
   const [newTokenCategory, setNewTokenCategory] = useState<ScholarshipCategory>("prestasi");
   const [isAddingToken, setIsAddingToken] = useState(false);
   const [userRole, setUserRole] = useState<"admin" | "staff" | null>(null);
+  const [selectedProgramId, setSelectedProgramId] = useState<string | null>(null);
   
   // Settings
   const [oneSenderApiUrl, setOneSenderApiUrl] = useState("");
