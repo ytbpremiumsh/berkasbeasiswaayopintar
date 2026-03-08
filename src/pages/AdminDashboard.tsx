@@ -116,6 +116,12 @@ const AdminDashboard = () => {
 
     if (adminRole) {
       setUserRole("admin");
+      // Fetch active program initially
+      const { data: progs } = await supabase.from("scholarship_programs").select("id, is_active").order("created_at");
+      if (progs && progs.length > 0) {
+        const active = progs.find(p => p.is_active);
+        setSelectedProgramId(active?.id || progs[0].id);
+      }
       return;
     }
 
