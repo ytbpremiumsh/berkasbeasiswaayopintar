@@ -347,6 +347,7 @@ export type Database = {
           created_at: string
           form_data: Json
           id: string
+          program_id: string | null
           updated_at: string
         }
         Insert: {
@@ -354,6 +355,7 @@ export type Database = {
           created_at?: string
           form_data?: Json
           id?: string
+          program_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -361,6 +363,42 @@ export type Database = {
           created_at?: string
           form_data?: Json
           id?: string
+          program_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "registrations_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "scholarship_programs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      scholarship_programs: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
           updated_at?: string
         }
         Relationships: []
@@ -384,6 +422,7 @@ export type Database = {
           khs_url: string | null
           ktm_url: string | null
           phone: string | null
+          program_id: string | null
           sertifikat_prestasi_url: string | null
           sktm_url: string | null
           status: Database["public"]["Enums"]["submission_status"]
@@ -415,6 +454,7 @@ export type Database = {
           khs_url?: string | null
           ktm_url?: string | null
           phone?: string | null
+          program_id?: string | null
           sertifikat_prestasi_url?: string | null
           sktm_url?: string | null
           status?: Database["public"]["Enums"]["submission_status"]
@@ -446,6 +486,7 @@ export type Database = {
           khs_url?: string | null
           ktm_url?: string | null
           phone?: string | null
+          program_id?: string | null
           sertifikat_prestasi_url?: string | null
           sktm_url?: string | null
           status?: Database["public"]["Enums"]["submission_status"]
@@ -461,6 +502,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "scholarship_submissions_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "scholarship_programs"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "scholarship_submissions_token_id_fkey"
             columns: ["token_id"]
             isOneToOne: false
@@ -474,6 +522,7 @@ export type Database = {
           category: Database["public"]["Enums"]["scholarship_category"]
           created_at: string
           id: string
+          program_id: string | null
           status: Database["public"]["Enums"]["token_status"]
           token_code: string
           used_at: string | null
@@ -483,6 +532,7 @@ export type Database = {
           category: Database["public"]["Enums"]["scholarship_category"]
           created_at?: string
           id?: string
+          program_id?: string | null
           status?: Database["public"]["Enums"]["token_status"]
           token_code: string
           used_at?: string | null
@@ -492,12 +542,21 @@ export type Database = {
           category?: Database["public"]["Enums"]["scholarship_category"]
           created_at?: string
           id?: string
+          program_id?: string | null
           status?: Database["public"]["Enums"]["token_status"]
           token_code?: string
           used_at?: string | null
           used_by?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "scholarship_tokens_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "scholarship_programs"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       shortlink_visits: {
         Row: {
