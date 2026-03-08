@@ -732,10 +732,10 @@ const AdminDashboard = () => {
           {activeTab === "success-templates" && <SuccessTemplatesManager />}
 
           {/* Duplicate Submissions */}
-          {activeTab === "duplicates" && <DuplicateSubmissions />}
+          {activeTab === "duplicates" && <DuplicateSubmissions programId={selectedProgramId} />}
 
           {/* Verified Submissions */}
-          {activeTab === "verified" && <VerifiedSubmissions />}
+          {activeTab === "verified" && <VerifiedSubmissions programId={selectedProgramId} />}
 
           {/* Settings */}
           {activeTab === "settings" && <AdminSettings />}
@@ -771,10 +771,10 @@ const AdminDashboard = () => {
           {activeTab === "check-logs" && <CheckStatusLogs />}
 
           {/* Candidate Recipients */}
-          {activeTab === "candidates" && <CandidateRecipients />}
+          {activeTab === "candidates" && <CandidateRecipients programId={selectedProgramId} />}
 
           {/* Registration */}
-          {activeTab === "reg-entries" && <RegistrationEntries />}
+          {activeTab === "reg-entries" && <RegistrationEntries programId={selectedProgramId} />}
           {activeTab === "reg-fields" && <RegistrationFieldsManager />}
           {activeTab === "reg-embed" && <RegistrationEmbedManager />}
 
@@ -785,7 +785,7 @@ const AdminDashboard = () => {
           {activeTab === "programs" && <ProgramManager />}
 
           {/* All Submissions */}
-          {activeTab === "all-submissions" && <AllSubmissions onStatusUpdate={fetchData} />}
+          {activeTab === "all-submissions" && <AllSubmissions onStatusUpdate={fetchData} programId={selectedProgramId} />}
         </main>
       </div>
     </div>
