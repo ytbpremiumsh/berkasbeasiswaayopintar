@@ -1,7 +1,14 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { GraduationCap } from "lucide-react";
+import { GraduationCap, ChevronDown, Check } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface Program {
   id: string;
@@ -38,24 +45,46 @@ export function ProgramSelector({ selectedProgramId, onProgramChange }: ProgramS
 
   if (programs.length <= 1) return null;
 
+  const selected = programs.find(p => p.id === selectedProgramId);
+
   return (
-    <div className="flex items-center gap-2">
-      <GraduationCap className="w-4 h-4 text-muted-foreground shrink-0" />
-      <Select value={selectedProgramId || ""} onValueChange={onProgramChange}>
-        <SelectTrigger className="w-[200px] h-9 text-sm">
-          <SelectValue placeholder="Pilih Program" />
-        </SelectTrigger>
-        <SelectContent className="bg-card border">
-          {programs.map((p) => (
-            <SelectItem key={p.id} value={p.id}>
-              <span className="flex items-center gap-2">
-                {p.name}
-                {p.is_active && <span className="text-[10px] text-primary font-medium">(Aktif)</span>}
-              </span>
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-    </div>
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button className="flex items-center gap-2.5 px-3 py-2 rounded-lg bg-primary/5 hover:bg-primary/10 border border-primary/20 transition-colors whitespace-nowrap">
+          <GraduationCap className="w-4 h-4 text-primary shrink-0" />
+          <span className="text-sm font-medium text-foreground truncate max-w-[250px]">
+            {selected?.name || "Pilih Program"}
+          </span>
+          {selected?.is_active && (
+            <Badge variant="default" className="text-[10px] px-1.5 py-0 h-4 shrink-0">
+              Aktif
+            </Badge>
+          )}
+          <ChevronDown className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start" className="min-w-[240px]">
+        {programs.map((p) => (
+          <DropdownMenuItem
+            key={p.id}
+            onClick={() => onProgramChange(p.id)}
+            className="flex items-center justify-between gap-3 whitespace-nowrap cursor-pointer"
+          >
+            <span className="flex items-center gap-2">
+              <GraduationCap className="w-4 h-4 text-muted-foreground shrink-0" />
+              <span className="font-medium">{p.name}</span>
+              {p.is_active && (
+                <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4 shrink-0">
+                  Aktif
+                </Badge>
+              )}
+            </span>
+            {p.id === selectedProgramId && (
+              <Check className="w-4 h-4 text-primary shrink-0" />
+            )}
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
