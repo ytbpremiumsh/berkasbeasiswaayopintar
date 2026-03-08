@@ -33,6 +33,8 @@ import { RegistrationFieldsManager } from "@/components/admin/RegistrationFields
 import { RegistrationEntries } from "@/components/admin/RegistrationEntries";
 import { RegistrationEmbedManager } from "@/components/admin/RegistrationEmbedManager";
 import { ExternalAppsManager } from "@/components/admin/ExternalAppsManager";
+import { ProgramManager } from "@/components/admin/ProgramManager";
+import { ProgramSelector } from "@/components/admin/ProgramSelector";
 import * as XLSX from "xlsx";
 import { cn } from "@/lib/utils";
 import { 
