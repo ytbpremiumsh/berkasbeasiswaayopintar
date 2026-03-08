@@ -64,6 +64,7 @@ const menuGroups = [
       { id: "embed", label: "Embed Form", icon: Code },
       { id: "check-logs", label: "Log Cek Status", icon: Eye },
       { id: "external-apps", label: "Aplikasi Eksternal", icon: AppWindow },
+      { id: "programs", label: "Program Beasiswa", icon: GraduationCap },
     ],
   },
   {
