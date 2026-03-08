@@ -781,6 +781,9 @@ const AdminDashboard = () => {
           {/* External Apps */}
           {activeTab === "external-apps" && <ExternalAppsManager />}
 
+          {/* Program Manager */}
+          {activeTab === "programs" && <ProgramManager />}
+
           {/* All Submissions */}
           {activeTab === "all-submissions" && <AllSubmissions onStatusUpdate={fetchData} />}
         </main>
