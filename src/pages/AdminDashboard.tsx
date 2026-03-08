@@ -151,13 +151,19 @@ const AdminDashboard = () => {
   const fetchData = async () => {
     setIsLoading(true);
     try {
-      const { data: subs, error: subsError } = await supabase
+      let subsQuery = supabase
         .from("scholarship_submissions")
         .select(`
           *,
           scholarship_tokens!token_id (token_code)
         `)
         .order("submitted_at", { ascending: false });
+
+      if (selectedProgramId) {
+        subsQuery = subsQuery.eq("program_id", selectedProgramId);
+      }
+
+      const { data: subs, error: subsError } = await subsQuery;
 
       if (subsError) throw subsError;
       setSubmissions(subs || []);
