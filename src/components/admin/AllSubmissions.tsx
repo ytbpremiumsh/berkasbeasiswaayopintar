@@ -81,13 +81,19 @@ export function AllSubmissions({ onStatusUpdate, programId }: AllSubmissionsProp
   const fetchSubmissions = async () => {
     setIsLoading(true);
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from("scholarship_submissions")
         .select(`
           *,
           scholarship_tokens!token_id (token_code)
         `)
         .order("submitted_at", { ascending: false });
+
+      if (programId) {
+        query = query.eq("program_id", programId);
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
 
