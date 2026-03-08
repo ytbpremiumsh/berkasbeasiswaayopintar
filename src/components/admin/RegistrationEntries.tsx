@@ -34,19 +34,23 @@ const categoryLabels: Record<ScholarshipCategory, { label: string; icon: any; gr
   umum: { label: "Umum", icon: Globe, gradient: "from-blue-500 to-indigo-500" },
 };
 
-export function RegistrationEntries() {
+export function RegistrationEntries({ programId }: { programId?: string | null }) {
   const [registrations, setRegistrations] = useState<Registration[]>([]);
   const [fields, setFields] = useState<RegField[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState<ScholarshipCategory>("prestasi");
   const [selectedEntry, setSelectedEntry] = useState<Registration | null>(null);
 
-  useEffect(() => { fetchData(); }, []);
+  useEffect(() => { fetchData(); }, [programId]);
 
   const fetchData = async () => {
     setIsLoading(true);
+    let regsQuery = supabase.from("registrations").select("*").order("created_at", { ascending: false });
+    if (programId) {
+      regsQuery = regsQuery.eq("program_id", programId);
+    }
     const [regsResult, fieldsResult] = await Promise.all([
-      supabase.from("registrations").select("*").order("created_at", { ascending: false }),
+      regsQuery,
       supabase.from("registration_fields").select("*").order("display_order", { ascending: true }),
     ]);
     if (!regsResult.error) setRegistrations(regsResult.data || []);

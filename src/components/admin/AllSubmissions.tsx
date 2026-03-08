@@ -62,9 +62,10 @@ interface Submission {
 
 interface AllSubmissionsProps {
   onStatusUpdate: () => void;
+  programId?: string | null;
 }
 
-export function AllSubmissions({ onStatusUpdate }: AllSubmissionsProps) {
+export function AllSubmissions({ onStatusUpdate, programId }: AllSubmissionsProps) {
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [filterCategory, setFilterCategory] = useState<"all" | ScholarshipCategory>("all");
@@ -75,18 +76,24 @@ export function AllSubmissions({ onStatusUpdate }: AllSubmissionsProps) {
 
   useEffect(() => {
     fetchSubmissions();
-  }, []);
+  }, [programId]);
 
   const fetchSubmissions = async () => {
     setIsLoading(true);
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from("scholarship_submissions")
         .select(`
           *,
           scholarship_tokens!token_id (token_code)
         `)
         .order("submitted_at", { ascending: false });
+
+      if (programId) {
+        query = query.eq("program_id", programId);
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
 

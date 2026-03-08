@@ -33,6 +33,8 @@ import { RegistrationFieldsManager } from "@/components/admin/RegistrationFields
 import { RegistrationEntries } from "@/components/admin/RegistrationEntries";
 import { RegistrationEmbedManager } from "@/components/admin/RegistrationEmbedManager";
 import { ExternalAppsManager } from "@/components/admin/ExternalAppsManager";
+import { ProgramManager } from "@/components/admin/ProgramManager";
+import { ProgramSelector } from "@/components/admin/ProgramSelector";
 import * as XLSX from "xlsx";
 import { cn } from "@/lib/utils";
 import { 
@@ -72,6 +74,7 @@ const AdminDashboard = () => {
   const [newTokenCategory, setNewTokenCategory] = useState<ScholarshipCategory>("prestasi");
   const [isAddingToken, setIsAddingToken] = useState(false);
   const [userRole, setUserRole] = useState<"admin" | "staff" | null>(null);
+  const [selectedProgramId, setSelectedProgramId] = useState<string | null>(null);
   
   // Settings
   const [oneSenderApiUrl, setOneSenderApiUrl] = useState("");
@@ -90,8 +93,11 @@ const AdminDashboard = () => {
 
   useEffect(() => {
     checkAccess();
-    fetchData();
   }, []);
+
+  useEffect(() => {
+    if (selectedProgramId) fetchData();
+  }, [selectedProgramId]);
 
   const checkAccess = async () => {
     const { data: { session } } = await supabase.auth.getSession();
@@ -110,6 +116,12 @@ const AdminDashboard = () => {
 
     if (adminRole) {
       setUserRole("admin");
+      // Fetch active program initially
+      const { data: progs } = await supabase.from("scholarship_programs").select("id, is_active").order("created_at");
+      if (progs && progs.length > 0) {
+        const active = progs.find(p => p.is_active);
+        setSelectedProgramId(active?.id || progs[0].id);
+      }
       return;
     }
 
@@ -123,6 +135,11 @@ const AdminDashboard = () => {
 
     if (staffRole) {
       setUserRole("staff");
+      const { data: progs } = await supabase.from("scholarship_programs").select("id, is_active").order("created_at");
+      if (progs && progs.length > 0) {
+        const active = progs.find(p => p.is_active);
+        setSelectedProgramId(active?.id || progs[0].id);
+      }
       return;
     }
 
@@ -134,13 +151,19 @@ const AdminDashboard = () => {
   const fetchData = async () => {
     setIsLoading(true);
     try {
-      const { data: subs, error: subsError } = await supabase
+      let subsQuery = supabase
         .from("scholarship_submissions")
         .select(`
           *,
           scholarship_tokens!token_id (token_code)
         `)
         .order("submitted_at", { ascending: false });
+
+      if (selectedProgramId) {
+        subsQuery = subsQuery.eq("program_id", selectedProgramId);
+      }
+
+      const { data: subs, error: subsError } = await subsQuery;
 
       if (subsError) throw subsError;
       setSubmissions(subs || []);
@@ -165,13 +188,16 @@ const AdminDashboard = () => {
 
       setCategoryStats(stats);
 
-      const { data: toks, error: toksError } = await supabase
+      let toksQuery = supabase
         .from("scholarship_tokens")
         .select("*")
         .order("created_at", { ascending: false });
 
-      if (toksError) throw toksError;
-      setTokens(toks || []);
+      if (selectedProgramId) {
+        toksQuery = toksQuery.eq("program_id", selectedProgramId);
+      }
+
+      const { data: toks, error: toksError } = await toksQuery;
 
       // Fetch settings
       const { data: settings } = await supabase.from("admin_settings").select("*");
@@ -232,6 +258,7 @@ const AdminDashboard = () => {
       const { error } = await supabase.from("scholarship_tokens").insert({
         token_code: newTokenCode.toUpperCase(),
         category: newTokenCategory,
+        program_id: selectedProgramId,
       });
 
       if (error) throw error;
@@ -356,6 +383,11 @@ const AdminDashboard = () => {
             </div>
           </div>
         )}
+
+        {/* Program Selector Bar */}
+        <div className="bg-card border-b px-3 sm:px-4 md:px-6 py-2 flex items-center gap-3">
+          <ProgramSelector selectedProgramId={selectedProgramId} onProgramChange={setSelectedProgramId} />
+        </div>
 
         {/* Content Area - Scrollable */}
         <main className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6">
@@ -700,10 +732,10 @@ const AdminDashboard = () => {
           {activeTab === "success-templates" && <SuccessTemplatesManager />}
 
           {/* Duplicate Submissions */}
-          {activeTab === "duplicates" && <DuplicateSubmissions />}
+          {activeTab === "duplicates" && <DuplicateSubmissions programId={selectedProgramId} />}
 
           {/* Verified Submissions */}
-          {activeTab === "verified" && <VerifiedSubmissions />}
+          {activeTab === "verified" && <VerifiedSubmissions programId={selectedProgramId} />}
 
           {/* Settings */}
           {activeTab === "settings" && <AdminSettings />}
@@ -739,18 +771,21 @@ const AdminDashboard = () => {
           {activeTab === "check-logs" && <CheckStatusLogs />}
 
           {/* Candidate Recipients */}
-          {activeTab === "candidates" && <CandidateRecipients />}
+          {activeTab === "candidates" && <CandidateRecipients programId={selectedProgramId} />}
 
           {/* Registration */}
-          {activeTab === "reg-entries" && <RegistrationEntries />}
+          {activeTab === "reg-entries" && <RegistrationEntries programId={selectedProgramId} />}
           {activeTab === "reg-fields" && <RegistrationFieldsManager />}
           {activeTab === "reg-embed" && <RegistrationEmbedManager />}
 
           {/* External Apps */}
           {activeTab === "external-apps" && <ExternalAppsManager />}
 
+          {/* Program Manager */}
+          {activeTab === "programs" && <ProgramManager />}
+
           {/* All Submissions */}
-          {activeTab === "all-submissions" && <AllSubmissions onStatusUpdate={fetchData} />}
+          {activeTab === "all-submissions" && <AllSubmissions onStatusUpdate={fetchData} programId={selectedProgramId} />}
         </main>
       </div>
     </div>

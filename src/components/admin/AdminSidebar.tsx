@@ -1,4 +1,4 @@
-import { FileText, Key, FormInput, Settings, LayoutDashboard, LogOut, CheckSquare, Copy, BadgeCheck, PanelLeftClose, PanelLeft, Users, MonitorPlay, Wallet, ChevronDown, Image, Link2, ListChecks, Clock, MessageCircle, Code, Eye, Trophy, ClipboardList, UserPlus, AppWindow } from "lucide-react";
+import { FileText, Key, FormInput, Settings, LayoutDashboard, LogOut, CheckSquare, Copy, BadgeCheck, PanelLeftClose, PanelLeft, Users, MonitorPlay, Wallet, ChevronDown, Image, Link2, ListChecks, Clock, MessageCircle, Code, Eye, Trophy, ClipboardList, UserPlus, AppWindow, GraduationCap } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -64,6 +64,7 @@ const menuGroups = [
       { id: "embed", label: "Embed Form", icon: Code },
       { id: "check-logs", label: "Log Cek Status", icon: Eye },
       { id: "external-apps", label: "Aplikasi Eksternal", icon: AppWindow },
+      { id: "programs", label: "Program Beasiswa", icon: GraduationCap },
     ],
   },
   {

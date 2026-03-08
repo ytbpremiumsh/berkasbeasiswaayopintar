@@ -20,21 +20,27 @@ interface DuplicateGroup {
   }>;
 }
 
-export function DuplicateSubmissions() {
+export function DuplicateSubmissions({ programId }: { programId?: string | null }) {
   const [isLoading, setIsLoading] = useState(true);
   const [duplicates, setDuplicates] = useState<DuplicateGroup[]>([]);
 
   useEffect(() => {
     fetchDuplicates();
-  }, []);
+  }, [programId]);
 
   const fetchDuplicates = async () => {
     setIsLoading(true);
     try {
-      const { data: submissions, error } = await supabase
+      let query = supabase
         .from("scholarship_submissions")
         .select("id, full_name, email, token_id, category, submitted_at")
         .order("submitted_at", { ascending: false });
+
+      if (programId) {
+        query = query.eq("program_id", programId);
+      }
+
+      const { data: submissions, error } = await query;
 
       if (error) throw error;
 

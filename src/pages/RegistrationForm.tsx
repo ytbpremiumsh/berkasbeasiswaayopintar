@@ -90,9 +90,17 @@ const RegistrationForm = () => {
 
     setIsSubmitting(true);
     try {
+      // Get active program
+      const { data: activeProgram } = await supabase
+        .from("scholarship_programs")
+        .select("id")
+        .eq("is_active", true)
+        .maybeSingle();
+
       const { error } = await supabase.from("registrations").insert({
         category: validCategory,
         form_data: formData,
+        program_id: activeProgram?.id || null,
       });
 
       if (error) throw error;

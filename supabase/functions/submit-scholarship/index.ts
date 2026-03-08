@@ -73,6 +73,13 @@ serve(async (req) => {
 
     const tokenCode = token.token_code;
 
+    // Get active program
+    const { data: activeProgram } = await supabase
+      .from("scholarship_programs")
+      .select("id")
+      .eq("is_active", true)
+      .maybeSingle();
+
     // Update token status
     await supabase
       .from("scholarship_tokens")
@@ -103,6 +110,7 @@ serve(async (req) => {
       video_tiktok_url: videoTiktokUrl,
       berkas_pendukung_url: berkasPendukungUrl,
       bukti_struk_url: buktiStrukUrl,
+      program_id: activeProgram?.id || null,
     });
 
     if (insertError) {
