@@ -106,7 +106,7 @@ export function MpwaSettings() {
 
   const generateQr = async () => {
     if (!apiKey || !sender) {
-      toast({ title: "Isi API Key & Sender dulu lalu Simpan", variant: "destructive" });
+      toast({ title: "Isi API Key & Sender dulu", variant: "destructive" });
       return;
     }
     setQrLoading(true);
@@ -114,12 +114,20 @@ export function MpwaSettings() {
     setQrMessage("");
     try {
       const { data, error } = await supabase.functions.invoke("mpwa-send", {
-        body: { action: "generate-qr" },
+        body: { action: "generate-qr", apiKey, sender },
       });
       if (error) throw error;
+      if (!data?.success) {
+        throw new Error(data?.message || "Gagal mengambil QR");
+      }
       const r = data?.data || {};
-      if (r.qrcode) setQrImage(r.qrcode);
-      setQrMessage(r.msg || (r.qrcode ? "Scan QR untuk koneksi" : "Tidak ada QR"));
+      const msg = r.msg || r.message || "";
+      if (r.qrcode) {
+        setQrImage(r.qrcode);
+        setQrMessage(msg || "Scan QR untuk koneksi");
+      } else {
+        setQrMessage(msg || "Device sudah terhubung atau tidak ada QR");
+      }
     } catch (e: any) {
       toast({ title: "Gagal generate QR", description: e.message, variant: "destructive" });
     } finally { setQrLoading(false); }

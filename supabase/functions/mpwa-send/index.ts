@@ -58,24 +58,84 @@ serve(async (req) => {
     const isEnabled = getBool(settings || [], "mpwa_enabled");
 
     if (action === "generate-qr") {
-      if (!apiKey || !sender) {
+      const useKey = String(body.apiKey || apiKey || "");
+      const useSender = String(body.sender || sender || "");
+      if (!useKey || !useSender) {
         return new Response(
           JSON.stringify({ success: false, message: "API Key dan Sender wajib diisi" }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 },
         );
       }
       const qrUrl = "https://app.ayopintar.com/generate-qr";
-      const r = await fetch(qrUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ api_key: apiKey, device: sender, force: true }),
-      });
-      const result = await r.json().catch(() => ({}));
+      const payload = { api_key: useKey, device: useSender, force: true };
+      console.log("[mpwa-qr] requesting", { sender: useSender });
+
+      let r: Response;
+      let raw = "";
+      let parsed: any = null;
+
+      // 1) Try POST JSON
+      try {
+        r = await fetch(qrUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Accept": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        raw = await r.text();
+        try { parsed = JSON.parse(raw); } catch { parsed = null; }
+      } catch (e) {
+        console.error("[mpwa-qr] POST JSON failed", e);
+      }
+
+      // 2) Fallback: POST form-urlencoded
+      if (!parsed) {
+        try {
+          const form = new URLSearchParams();
+          form.set("api_key", useKey);
+          form.set("device", useSender);
+          form.set("force", "true");
+          r = await fetch(qrUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded", "Accept": "application/json" },
+            body: form.toString(),
+          });
+          raw = await r.text();
+          try { parsed = JSON.parse(raw); } catch { parsed = null; }
+        } catch (e) {
+          console.error("[mpwa-qr] POST form failed", e);
+        }
+      }
+
+      // 3) Fallback: GET
+      if (!parsed) {
+        try {
+          const u = new URL(qrUrl);
+          u.searchParams.set("api_key", useKey);
+          u.searchParams.set("device", useSender);
+          u.searchParams.set("force", "true");
+          r = await fetch(u.toString(), { method: "GET", headers: { "Accept": "application/json" } });
+          raw = await r.text();
+          try { parsed = JSON.parse(raw); } catch { parsed = null; }
+        } catch (e) {
+          console.error("[mpwa-qr] GET failed", e);
+        }
+      }
+
+      console.log("[mpwa-qr] response", { hasParsed: !!parsed, rawPreview: raw.slice(0, 200) });
+
+      if (!parsed) {
+        return new Response(
+          JSON.stringify({ success: false, message: "Respon tidak valid dari MPWA", raw: raw.slice(0, 500) }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 502 },
+        );
+      }
+
       return new Response(
-        JSON.stringify({ success: true, data: result }),
+        JSON.stringify({ success: true, data: parsed }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
+
 
     // send action
     const rawPhone = String(body.phone || "");
