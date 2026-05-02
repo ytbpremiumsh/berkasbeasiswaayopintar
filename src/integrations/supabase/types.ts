@@ -701,6 +701,7 @@ export type Database = {
           error_message: string | null
           id: string
           message: string
+          provider: string | null
           recipient_name: string
           recipient_phone: string
           sent_at: string | null
@@ -711,6 +712,7 @@ export type Database = {
           error_message?: string | null
           id?: string
           message: string
+          provider?: string | null
           recipient_name: string
           recipient_phone: string
           sent_at?: string | null
@@ -721,6 +723,7 @@ export type Database = {
           error_message?: string | null
           id?: string
           message?: string
+          provider?: string | null
           recipient_name?: string
           recipient_phone?: string
           sent_at?: string | null

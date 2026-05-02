@@ -59,6 +59,7 @@ const menuGroups = [
       { id: "shortlinks", label: "Kelola Shortlink", icon: Link2 },
       { id: "countdown", label: "Countdown", icon: Clock },
       { id: "whatsapp", label: "WhatsApp", icon: MessageCircle },
+      { id: "mpwa", label: "MPWA BalasinAja", icon: MessageCircle },
       { id: "staff", label: "Kelola Staff", icon: Users },
       { id: "adsense", label: "Kelola AdSense", icon: MonitorPlay },
       { id: "embed", label: "Embed Form", icon: Code },
