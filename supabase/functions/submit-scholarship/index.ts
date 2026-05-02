@@ -216,6 +216,77 @@ serve(async (req) => {
       // Don't fail the submission if WhatsApp fails
     }
 
+    // Send via MPWA BalasinAja if enabled
+    try {
+      const { data: mpwaSettings } = await supabase
+        .from("admin_settings")
+        .select("setting_key, setting_value")
+        .in("setting_key", ["mpwa_api_url", "mpwa_api_key", "mpwa_sender", "mpwa_footer", "mpwa_template", "mpwa_enabled"]);
+
+      const getV = (key: string): string => {
+        const f = mpwaSettings?.find((s: any) => s.setting_key === key)?.setting_value;
+        if (!f) return "";
+        if (typeof f === "string") return f;
+        return String(f.value ?? "");
+      };
+      const getB = (key: string): boolean => {
+        const f = mpwaSettings?.find((s: any) => s.setting_key === key)?.setting_value;
+        const v = typeof f === "object" ? f?.value : f;
+        return v === true || v === "true";
+      };
+
+      const mpwaEnabled = getB("mpwa_enabled");
+      const mpwaUrl = getV("mpwa_api_url") || "https://app.ayopintar.com/send-message";
+      const mpwaKey = getV("mpwa_api_key");
+      const mpwaSender = getV("mpwa_sender");
+      const mpwaFooter = getV("mpwa_footer");
+      const mpwaTemplate = getV("mpwa_template");
+
+      const onlyDigits2 = (v: string) => (v || "").replace(/\D/g, "");
+      const normPhone = (v: string) => {
+        const d = onlyDigits2(v);
+        if (!d) return "";
+        if (d.startsWith("62")) return d;
+        if (d.startsWith("0")) return `62${d.slice(1)}`;
+        return d;
+      };
+      const recipient = normPhone(String(phone || ""));
+
+      if (mpwaEnabled && mpwaKey && mpwaSender && mpwaTemplate && recipient) {
+        const categoryLabels2: Record<string, string> = {
+          prestasi: "Prestasi", yatim: "Yatim", ekonomi: "Ekonomi", umum: "Umum",
+        };
+        const message = mpwaTemplate
+          .replace(/\{\{nama\}\}/g, fullName)
+          .replace(/\{\{kategori_beasiswa\}\}/g, categoryLabels2[category] || category)
+          .replace(/\{\{status_pendaftar\}\}/g, applicantStatus.replace("_", " "))
+          .replace(/\{\{tanggal_submit\}\}/g, new Date().toLocaleDateString("id-ID"))
+          .replace(/\{\{token\}\}/g, tokenCode);
+
+        const payload: any = { api_key: mpwaKey, sender: mpwaSender, number: recipient, message };
+        if (mpwaFooter) payload.footer = mpwaFooter;
+
+        const r = await fetch(mpwaUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        let result: any = null;
+        try { result = await r.json(); } catch { result = { raw: await r.text().catch(() => "") }; }
+        const ok = r.ok && (result?.status === true || result?.status === "true");
+        await supabase.from("whatsapp_logs").insert({
+          recipient_phone: recipient,
+          recipient_name: fullName,
+          message,
+          status: ok ? "success" : "failed",
+          error_message: ok ? null : JSON.stringify(result),
+          provider: "mpwa",
+        } as any);
+      }
+    } catch (mpwaErr) {
+      console.error("MPWA notification error:", mpwaErr);
+    }
+
 
     return new Response(
       JSON.stringify({ success: true, message: "Berkas berhasil dikirim" }),
