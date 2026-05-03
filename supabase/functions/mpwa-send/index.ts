@@ -70,54 +70,37 @@ serve(async (req) => {
       const payload = { api_key: useKey, device: useSender, force: true };
       console.log("[mpwa-qr] requesting", { sender: useSender });
 
-      let r: Response;
       let raw = "";
       let parsed: any = null;
+      const isValid = (p: any) => p && !p.exception && !(typeof p.message === "string" && /method is not supported/i.test(p.message));
 
-      // 1) Try POST JSON
+      // 1) GET (required by MPWA)
       try {
-        r = await fetch(qrUrl, {
-          method: "POST",
-          headers: { "Content-Type": "application/json", "Accept": "application/json" },
-          body: JSON.stringify(payload),
-        });
+        const u = new URL(qrUrl);
+        u.searchParams.set("api_key", useKey);
+        u.searchParams.set("device", useSender);
+        u.searchParams.set("force", "true");
+        const r = await fetch(u.toString(), { method: "GET", headers: { "Accept": "application/json" } });
         raw = await r.text();
         try { parsed = JSON.parse(raw); } catch { parsed = null; }
+        if (!isValid(parsed)) parsed = null;
       } catch (e) {
-        console.error("[mpwa-qr] POST JSON failed", e);
+        console.error("[mpwa-qr] GET failed", e);
       }
 
-      // 2) Fallback: POST form-urlencoded
+      // 2) Fallback: POST JSON
       if (!parsed) {
         try {
-          const form = new URLSearchParams();
-          form.set("api_key", useKey);
-          form.set("device", useSender);
-          form.set("force", "true");
-          r = await fetch(qrUrl, {
+          const r = await fetch(qrUrl, {
             method: "POST",
-            headers: { "Content-Type": "application/x-www-form-urlencoded", "Accept": "application/json" },
-            body: form.toString(),
+            headers: { "Content-Type": "application/json", "Accept": "application/json" },
+            body: JSON.stringify(payload),
           });
           raw = await r.text();
           try { parsed = JSON.parse(raw); } catch { parsed = null; }
+          if (!isValid(parsed)) parsed = null;
         } catch (e) {
-          console.error("[mpwa-qr] POST form failed", e);
-        }
-      }
-
-      // 3) Fallback: GET
-      if (!parsed) {
-        try {
-          const u = new URL(qrUrl);
-          u.searchParams.set("api_key", useKey);
-          u.searchParams.set("device", useSender);
-          u.searchParams.set("force", "true");
-          r = await fetch(u.toString(), { method: "GET", headers: { "Accept": "application/json" } });
-          raw = await r.text();
-          try { parsed = JSON.parse(raw); } catch { parsed = null; }
-        } catch (e) {
-          console.error("[mpwa-qr] GET failed", e);
+          console.error("[mpwa-qr] POST JSON failed", e);
         }
       }
 
