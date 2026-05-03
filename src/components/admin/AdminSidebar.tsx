@@ -1,4 +1,4 @@
-import { FileText, Key, FormInput, Settings, LayoutDashboard, LogOut, CheckSquare, Copy, BadgeCheck, PanelLeftClose, PanelLeft, Users, MonitorPlay, Wallet, ChevronDown, Image, Link2, ListChecks, Clock, MessageCircle, Code, Eye, Trophy, ClipboardList, UserPlus, AppWindow, GraduationCap } from "lucide-react";
+import { FileText, Key, FormInput, Settings, LayoutDashboard, LogOut, CheckSquare, Copy, BadgeCheck, PanelLeftClose, PanelLeft, Users, MonitorPlay, Wallet, ChevronDown, Image, Link2, ListChecks, Clock, MessageCircle, Code, Eye, Trophy, ClipboardList, UserPlus, AppWindow, GraduationCap, BarChart3 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -59,6 +59,7 @@ const menuGroups = [
       { id: "shortlinks", label: "Kelola Shortlink", icon: Link2 },
       { id: "countdown", label: "Countdown", icon: Clock },
       { id: "mpwa", label: "WhatsApp (MPWA)", icon: MessageCircle },
+      { id: "wa-logs", label: "Laporan WhatsApp", icon: BarChart3 },
       { id: "staff", label: "Kelola Staff", icon: Users },
       { id: "adsense", label: "Kelola AdSense", icon: MonitorPlay },
       { id: "embed", label: "Embed Form", icon: Code },
