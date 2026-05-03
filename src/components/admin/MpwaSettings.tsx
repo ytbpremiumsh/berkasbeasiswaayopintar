@@ -122,8 +122,10 @@ export function MpwaSettings() {
       }
       const r = data?.data || {};
       const msg = r.msg || r.message || "";
-      if (r.qrcode) {
-        setQrImage(r.qrcode);
+      const qr = r.qrcode || r.qr || r.qr_code || r.qrCode;
+      if (qr) {
+        const src = String(qr).startsWith("data:") ? String(qr) : `data:image/png;base64,${qr}`;
+        setQrImage(src);
         setQrMessage(msg || "Scan QR untuk koneksi");
       } else {
         setQrMessage(msg || "Device sudah terhubung atau tidak ada QR");
