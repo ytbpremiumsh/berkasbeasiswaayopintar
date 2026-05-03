@@ -26,6 +26,7 @@ import { AllSubmissions } from "@/components/admin/AllSubmissions";
 import { CountdownManager } from "@/components/admin/CountdownManager";
 import { WhatsAppSettings } from "@/components/admin/WhatsAppSettings";
 import { MpwaSettings } from "@/components/admin/MpwaSettings";
+import { WhatsappLogs } from "@/components/admin/WhatsappLogs";
 import { AdminSettings } from "@/components/admin/AdminSettings";
 import { EmbedManager } from "@/components/admin/EmbedManager";
 import { CheckStatusLogs } from "@/components/admin/CheckStatusLogs";
@@ -768,6 +769,8 @@ const AdminDashboard = () => {
           {activeTab === "whatsapp" && <WhatsAppSettings />}
 
           {activeTab === "mpwa" && <MpwaSettings />}
+
+          {activeTab === "wa-logs" && <WhatsappLogs />}
 
           {/* Embed Manager */}
           {activeTab === "embed" && <EmbedManager />}
