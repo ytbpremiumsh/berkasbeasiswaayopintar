@@ -63,9 +63,10 @@ interface Submission {
 interface AllSubmissionsProps {
   onStatusUpdate: () => void;
   programId?: string | null;
+  onNavigate?: (tab: string) => void;
 }
 
-export function AllSubmissions({ onStatusUpdate, programId }: AllSubmissionsProps) {
+export function AllSubmissions({ onStatusUpdate, programId, onNavigate }: AllSubmissionsProps) {
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [filterCategory, setFilterCategory] = useState<"all" | ScholarshipCategory>("all");
@@ -146,6 +147,8 @@ export function AllSubmissions({ onStatusUpdate, programId }: AllSubmissionsProp
       fetchSubmissions();
       onStatusUpdate();
       setSelectedSubmission(null);
+      if (status === "diverifikasi") onNavigate?.("verified");
+      if (status === "kandidat_peraih") onNavigate?.("candidates");
     } catch (error: any) {
       toast({ title: "Gagal memperbarui status", description: error.message, variant: "destructive" });
     }

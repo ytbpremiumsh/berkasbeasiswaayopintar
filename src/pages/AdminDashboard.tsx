@@ -793,7 +793,7 @@ const AdminDashboard = () => {
           {activeTab === "programs" && <ProgramManager />}
 
           {/* All Submissions */}
-          {activeTab === "all-submissions" && <AllSubmissions onStatusUpdate={fetchData} programId={selectedProgramId} />}
+          {activeTab === "all-submissions" && <AllSubmissions onStatusUpdate={fetchData} programId={selectedProgramId} onNavigate={setActiveTab} />}
         </main>
       </div>
     </div>
