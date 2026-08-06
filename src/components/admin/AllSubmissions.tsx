@@ -63,9 +63,10 @@ interface Submission {
 interface AllSubmissionsProps {
   onStatusUpdate: () => void;
   programId?: string | null;
+  onNavigate?: (tab: string) => void;
 }
 
-export function AllSubmissions({ onStatusUpdate, programId }: AllSubmissionsProps) {
+export function AllSubmissions({ onStatusUpdate, programId, onNavigate }: AllSubmissionsProps) {
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [filterCategory, setFilterCategory] = useState<"all" | ScholarshipCategory>("all");
