@@ -147,6 +147,8 @@ export function AllSubmissions({ onStatusUpdate, programId, onNavigate }: AllSub
       fetchSubmissions();
       onStatusUpdate();
       setSelectedSubmission(null);
+      if (status === "diverifikasi") onNavigate?.("verified");
+      if (status === "kandidat_peraih") onNavigate?.("candidates");
     } catch (error: any) {
       toast({ title: "Gagal memperbarui status", description: error.message, variant: "destructive" });
     }
