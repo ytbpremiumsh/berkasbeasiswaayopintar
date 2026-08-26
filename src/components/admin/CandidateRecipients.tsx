@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Loader2, Download, Trophy, Heart, Wallet, Globe, Eye, ExternalLink, Award, UserCheck, Undo2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import * as XLSX from "xlsx";
+import { SubmissionFiles } from "@/components/admin/SubmissionFiles";
 
 type ScholarshipCategory = "prestasi" | "yatim" | "ekonomi" | "umum";
 
@@ -303,21 +304,8 @@ export function CandidateRecipients({ programId }: { programId?: string | null }
                                   </div>
                                   <hr />
                                   <div className="space-y-2">
-                                    <h4 className="font-semibold">Berkas</h4>
-                                    <div className="grid gap-2 text-sm">
-                                      {sub.kartu_pelajar_url && <a href={sub.kartu_pelajar_url} target="_blank" className="flex items-center gap-2 text-primary hover:underline"><ExternalLink className="w-3 h-3" /> Kartu Pelajar</a>}
-                                      {sub.ktm_url && <a href={sub.ktm_url} target="_blank" className="flex items-center gap-2 text-primary hover:underline"><ExternalLink className="w-3 h-3" /> KTM</a>}
-                                      {sub.cv_url && <a href={sub.cv_url} target="_blank" className="flex items-center gap-2 text-primary hover:underline"><ExternalLink className="w-3 h-3" /> CV</a>}
-                                      {sub.sertifikat_prestasi_url && <a href={sub.sertifikat_prestasi_url} target="_blank" className="flex items-center gap-2 text-primary hover:underline"><ExternalLink className="w-3 h-3" /> Sertifikat Prestasi</a>}
-                                      {sub.transkrip_nilai_url && <a href={sub.transkrip_nilai_url} target="_blank" className="flex items-center gap-2 text-primary hover:underline"><ExternalLink className="w-3 h-3" /> Transkrip Nilai</a>}
-                                      {sub.khs_url && <a href={sub.khs_url} target="_blank" className="flex items-center gap-2 text-primary hover:underline"><ExternalLink className="w-3 h-3" /> KHS</a>}
-                                      {sub.bukti_penghasilan_url && <a href={sub.bukti_penghasilan_url} target="_blank" className="flex items-center gap-2 text-primary hover:underline"><ExternalLink className="w-3 h-3" /> Bukti Penghasilan</a>}
-                                      {sub.bukti_listrik_url && <a href={sub.bukti_listrik_url} target="_blank" className="flex items-center gap-2 text-primary hover:underline"><ExternalLink className="w-3 h-3" /> Bukti Listrik</a>}
-                                      {sub.surat_keterangan_yatim_url && <a href={sub.surat_keterangan_yatim_url} target="_blank" className="flex items-center gap-2 text-primary hover:underline"><ExternalLink className="w-3 h-3" /> Surat Keterangan Yatim</a>}
-                                      {sub.sktm_url && <a href={sub.sktm_url} target="_blank" className="flex items-center gap-2 text-primary hover:underline"><ExternalLink className="w-3 h-3" /> SKTM</a>}
-                                      {sub.berkas_pendukung_url && <a href={sub.berkas_pendukung_url} target="_blank" className="flex items-center gap-2 text-primary hover:underline"><ExternalLink className="w-3 h-3" /> Berkas Pendukung</a>}
-                                      {sub.bukti_struk_url && <a href={sub.bukti_struk_url} target="_blank" className="flex items-center gap-2 text-primary hover:underline"><ExternalLink className="w-3 h-3" /> Bukti Struk</a>}
-                                    </div>
+                                    <SubmissionFiles submission={sub} category={sub.category} />
+
                                     {sub.essay && (
                                       <div className="mt-4">
                                         <h4 className="font-semibold mb-2">Esai</h4>
