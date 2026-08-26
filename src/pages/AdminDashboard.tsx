@@ -590,21 +590,8 @@ const AdminDashboard = () => {
                                         </div>
                                         <hr />
                                         <div className="space-y-2">
-                                          <h4 className="font-semibold">Berkas</h4>
-                                          <div className="grid gap-2 text-sm">
-                                            {selectedSubmission.kartu_pelajar_url && <a href={selectedSubmission.kartu_pelajar_url} target="_blank" className="flex items-center gap-2 text-primary hover:underline"><ExternalLink className="w-3 h-3" /> Kartu Pelajar</a>}
-                                            {selectedSubmission.ktm_url && <a href={selectedSubmission.ktm_url} target="_blank" className="flex items-center gap-2 text-primary hover:underline"><ExternalLink className="w-3 h-3" /> KTM</a>}
-                                            {selectedSubmission.cv_url && <a href={selectedSubmission.cv_url} target="_blank" className="flex items-center gap-2 text-primary hover:underline"><ExternalLink className="w-3 h-3" /> CV</a>}
-                                            {selectedSubmission.sertifikat_prestasi_url && <a href={selectedSubmission.sertifikat_prestasi_url} target="_blank" className="flex items-center gap-2 text-primary hover:underline"><ExternalLink className="w-3 h-3" /> Sertifikat Prestasi</a>}
-                                            {selectedSubmission.transkrip_nilai_url && <a href={selectedSubmission.transkrip_nilai_url} target="_blank" className="flex items-center gap-2 text-primary hover:underline"><ExternalLink className="w-3 h-3" /> Transkrip Nilai</a>}
-                                            {selectedSubmission.khs_url && <a href={selectedSubmission.khs_url} target="_blank" className="flex items-center gap-2 text-primary hover:underline"><ExternalLink className="w-3 h-3" /> KHS</a>}
-                                            {selectedSubmission.bukti_penghasilan_url && <a href={selectedSubmission.bukti_penghasilan_url} target="_blank" className="flex items-center gap-2 text-primary hover:underline"><ExternalLink className="w-3 h-3" /> Bukti Penghasilan</a>}
-                                            {selectedSubmission.bukti_listrik_url && <a href={selectedSubmission.bukti_listrik_url} target="_blank" className="flex items-center gap-2 text-primary hover:underline"><ExternalLink className="w-3 h-3" /> Bukti Listrik</a>}
-                                            {selectedSubmission.surat_keterangan_yatim_url && <a href={selectedSubmission.surat_keterangan_yatim_url} target="_blank" className="flex items-center gap-2 text-primary hover:underline"><ExternalLink className="w-3 h-3" /> Surat Keterangan Yatim</a>}
-                                            {selectedSubmission.sktm_url && <a href={selectedSubmission.sktm_url} target="_blank" className="flex items-center gap-2 text-primary hover:underline"><ExternalLink className="w-3 h-3" /> SKTM</a>}
-                                            {selectedSubmission.berkas_pendukung_url && <a href={selectedSubmission.berkas_pendukung_url} target="_blank" className="flex items-center gap-2 text-primary hover:underline"><ExternalLink className="w-3 h-3" /> Berkas Pendukung</a>}
-                                            {selectedSubmission.bukti_struk_url && <a href={selectedSubmission.bukti_struk_url} target="_blank" className="flex items-center gap-2 text-primary hover:underline"><ExternalLink className="w-3 h-3" /> Bukti Struk</a>}
-                                          </div>
+                                          <SubmissionFiles submission={selectedSubmission} category={selectedSubmission.category} />
+
                                           {selectedSubmission.essay && (
                                             <div className="mt-4">
                                               <h4 className="font-semibold mb-2">Esai</h4>
