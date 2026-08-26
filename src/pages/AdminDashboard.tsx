@@ -37,6 +37,8 @@ import { RegistrationEmbedManager } from "@/components/admin/RegistrationEmbedMa
 import { ExternalAppsManager } from "@/components/admin/ExternalAppsManager";
 import { ProgramManager } from "@/components/admin/ProgramManager";
 import { ProgramSelector } from "@/components/admin/ProgramSelector";
+import { SubmissionFiles } from "@/components/admin/SubmissionFiles";
+
 import * as XLSX from "xlsx";
 import { cn } from "@/lib/utils";
 import { 
