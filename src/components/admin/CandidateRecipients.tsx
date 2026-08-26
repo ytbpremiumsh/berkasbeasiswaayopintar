@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Loader2, Download, Trophy, Heart, Wallet, Globe, Eye, ExternalLink, Award, UserCheck, Undo2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import * as XLSX from "xlsx";
+import { SubmissionFiles } from "@/components/admin/SubmissionFiles";
 
 type ScholarshipCategory = "prestasi" | "yatim" | "ekonomi" | "umum";
 

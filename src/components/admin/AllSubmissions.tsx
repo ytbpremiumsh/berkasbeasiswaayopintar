@@ -11,6 +11,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Checkbox } from "@/components/ui/checkbox";
 import { Loader2, Eye, CheckCircle, XCircle, Download, Trophy, Heart, Wallet, Globe, ExternalLink, FileText, Trash2 } from "lucide-react";
 import * as XLSX from "xlsx";
+import { SubmissionFiles } from "@/components/admin/SubmissionFiles";
 
 type ScholarshipCategory = "prestasi" | "yatim" | "ekonomi" | "umum";
 type SubmissionStatus = "menunggu" | "diverifikasi" | "ditolak" | "kandidat_peraih";
