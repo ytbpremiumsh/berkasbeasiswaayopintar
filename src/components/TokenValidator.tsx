@@ -1,3 +1,4 @@
+import { assertRegistrationOpen } from "@/lib/registration-status";
 import { useState } from "react";
 import { Input } from "./ui/input";
 import { Button } from "./ui/button";
@@ -32,6 +33,7 @@ export function TokenValidator({ category, onValidToken, value }: TokenValidator
     setValidationResult(null);
 
     try {
+      await assertRegistrationOpen();
       // Call the edge function to verify license via Mayar API
       const { data, error } = await supabase.functions.invoke("verify-license", {
         body: {
@@ -42,6 +44,10 @@ export function TokenValidator({ category, onValidToken, value }: TokenValidator
 
       if (error) {
         console.error("Edge function error:", error);
+        if (error.context instanceof Response) {
+          const payload = await error.context.json().catch(() => null);
+          if (payload?.message) throw new Error(payload.message);
+        }
         throw error;
       }
 

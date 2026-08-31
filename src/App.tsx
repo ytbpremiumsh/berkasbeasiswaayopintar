@@ -1,3 +1,4 @@
+import { RegistrationGate } from "@/components/RegistrationGate";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -26,7 +27,7 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/auth" element={<Auth />} />
-          <Route path="/beasiswa/:category" element={<ScholarshipForm />} />
+          <Route path="/beasiswa/:category" element={<RegistrationGate><ScholarshipForm /></RegistrationGate>} />
           <Route path="/sukses" element={<SuccessPage />} />
           <Route path="/sukses/:category" element={<SuccessPage />} />
           <Route path="/cek-status" element={<CheckStatus />} />
@@ -34,7 +35,7 @@ const App = () => (
           <Route path="/admin/login" element={<AdminLogin />} />
           <Route path="/admin" element={<AdminDashboard />} />
           <Route path="/peraih-beasiswa" element={<PeraihBeasiswa />} />
-          <Route path="/daftar/:category" element={<RegistrationForm />} />
+          <Route path="/daftar/:category" element={<RegistrationGate><RegistrationForm /></RegistrationGate>} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

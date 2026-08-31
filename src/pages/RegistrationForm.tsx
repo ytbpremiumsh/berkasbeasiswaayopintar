@@ -1,3 +1,4 @@
+import { assertRegistrationOpen } from "@/lib/registration-status";
 import { useState, useEffect } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -90,6 +91,7 @@ const RegistrationForm = () => {
 
     setIsSubmitting(true);
     try {
+      await assertRegistrationOpen();
       // Get active program
       const { data: activeProgram } = await supabase
         .from("scholarship_programs")

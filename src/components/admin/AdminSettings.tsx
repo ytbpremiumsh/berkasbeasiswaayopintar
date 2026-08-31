@@ -1,3 +1,4 @@
+import { RegistrationSettings } from "./RegistrationSettings";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
@@ -183,6 +184,8 @@ export function AdminSettings() {
         <h1 className="text-2xl font-bold text-foreground">Pengaturan</h1>
         <p className="text-muted-foreground">Kelola profil dan konfigurasi API</p>
       </div>
+
+      <RegistrationSettings />
 
       {/* Profile Settings */}
       <Card>
