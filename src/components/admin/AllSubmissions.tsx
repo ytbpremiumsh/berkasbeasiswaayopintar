@@ -9,7 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Loader2, Eye, CheckCircle, XCircle, Download, Trophy, Heart, Wallet, Globe, ExternalLink, FileText, Trash2 } from "lucide-react";
+import { Loader2, Eye, CheckCircle, XCircle, Download, Trophy, Heart, Wallet, Globe, ExternalLink, FileText, Trash2, Crown } from "lucide-react";
 import * as XLSX from "xlsx";
 import { SubmissionFiles } from "@/components/admin/SubmissionFiles";
 
@@ -30,6 +30,11 @@ const formatIDR = (amount: number) =>
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   }).format(amount);
+
+const getPaidTokenPrice = (price: number | null | undefined) => {
+  const normalizedPrice = Number(price);
+  return Number.isFinite(normalizedPrice) && normalizedPrice > 0 ? normalizedPrice : null;
+};
 
 const statusConfig: Record<SubmissionStatus, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
   menunggu: { label: "Menunggu", variant: "secondary" },
@@ -123,7 +128,7 @@ export function AllSubmissions({ onStatusUpdate, programId, onNavigate }: AllSub
       const subsWithDetails = data?.map(s => ({
         ...s,
         token_code: s.scholarship_tokens?.token_code || "Unknown",
-        token_price: typeof s.scholarship_tokens?.price === "number" ? s.scholarship_tokens.price : null,
+        token_price: getPaidTokenPrice(s.scholarship_tokens?.price),
         verified_by_name: s.verified_by ? profileMap.get(s.verified_by) || "Admin" : undefined
       })) || [];
 
@@ -457,10 +462,10 @@ export function AllSubmissions({ onStatusUpdate, programId, onNavigate }: AllSub
                             <code className="text-xs bg-muted px-2 py-1 rounded font-mono">
                               {sub.token_code}
                             </code>
-                            {sub.token_price != null && sub.token_price > 0 && (
+                            {getPaidTokenPrice(sub.token_price) !== null && (
                               <Badge className="bg-amber-500/10 text-amber-600 border border-amber-500/20 gap-1 text-[10px] font-medium">
-                                <Wallet className="w-3 h-3" />
-                                Token Berbayar · {formatIDR(sub.token_price)}
+                                <Crown className="w-3 h-3" />
+                                Premium · {formatIDR(getPaidTokenPrice(sub.token_price)!)}
                               </Badge>
                             )}
                           </div>
@@ -511,10 +516,10 @@ export function AllSubmissions({ onStatusUpdate, programId, onNavigate }: AllSub
                                       <div><span className="text-muted-foreground">Status Pendaftar:</span> <strong className="capitalize">{selectedSubmission.applicant_status?.replace("_", " ")}</strong></div>
                                       <div><span className="text-muted-foreground">Institusi:</span> <strong>{selectedSubmission.institution_name || "-"}</strong></div>
                                       <div><span className="text-muted-foreground">Kode Token:</span> <code className="text-xs bg-muted px-2 py-1 rounded font-mono">{selectedSubmission.token_code}</code>
-                                        {selectedSubmission.token_price != null && selectedSubmission.token_price > 0 && (
+                                        {getPaidTokenPrice(selectedSubmission.token_price) !== null && (
                                           <Badge className="bg-amber-500/10 text-amber-600 border border-amber-500/20 gap-1 text-[10px] ml-2 align-middle">
-                                            <Wallet className="w-3 h-3" />
-                                            Token Berbayar · {formatIDR(selectedSubmission.token_price)}
+                                            <Crown className="w-3 h-3" />
+                                            Premium · {formatIDR(getPaidTokenPrice(selectedSubmission.token_price)!)}
                                           </Badge>
                                         )}
                                       </div>
