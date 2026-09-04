@@ -64,7 +64,10 @@ serve(async (req) => {
       });
     }
 
-    let url = `https://api.mayar.id/hl/v1/${endpoint}`;
+    // Support versioned endpoints, e.g. "v2/products/{id}/transactions" -> hl/v2/...
+    const versioned = endpoint.match(/^(v\d+)\/(.+)$/);
+    const basePath = versioned ? `hl/${versioned[1]}/${versioned[2]}` : `hl/v1/${endpoint}`;
+    let url = `https://api.mayar.id/${basePath}`;
 
     // Add query params if provided
     if (params && Object.keys(params).length > 0) {
