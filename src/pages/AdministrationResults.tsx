@@ -1,108 +1,96 @@
-import { useEffect, useMemo, useState } from "react";
-import { Award, CheckCircle2, Globe, GraduationCap, Heart, Loader2, Search, Trophy, Wallet } from "lucide-react";
+import { FormEvent, useEffect, useState } from "react";
+import { Award, CheckCircle2, Clock3, KeyRound, Loader2, Search, XCircle } from "lucide-react";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 
-type ScholarshipCategory = "prestasi" | "yatim" | "ekonomi" | "umum";
+type SubmissionStatus = "menunggu" | "diverifikasi" | "ditolak" | "kandidat_peraih";
 
-interface AdministrationRecipient {
-  id: string;
+interface AdministrationResult {
   full_name: string;
-  category: ScholarshipCategory;
-  applicant_status: "pelajar" | "mahasiswa";
+  category: string;
   institution_name: string | null;
   program_name: string;
+  status: SubmissionStatus;
 }
 
-const categoryConfig = {
-  prestasi: { label: "Prestasi", icon: Trophy, className: "text-amber-600 bg-amber-500/10 border-amber-500/20" },
-  yatim: { label: "Yatim", icon: Heart, className: "text-rose-600 bg-rose-500/10 border-rose-500/20" },
-  ekonomi: { label: "Ekonomi", icon: Wallet, className: "text-emerald-600 bg-emerald-500/10 border-emerald-500/20" },
-  umum: { label: "Umum", icon: Globe, className: "text-blue-600 bg-blue-500/10 border-blue-500/20" },
-} satisfies Record<ScholarshipCategory, { label: string; icon: typeof Trophy; className: string }>;
+const statusConfig = {
+  menunggu: { title: "Pengajuan Sedang Diproses", description: "Berkas Anda masih dalam proses pemeriksaan oleh tim administrasi.", label: "Sedang Diproses", icon: Clock3, className: "border-amber-200 bg-amber-50 text-amber-700" },
+  diverifikasi: { title: "Selamat, Anda Lolos Administrasi!", description: "Pengajuan Anda telah diverifikasi dan dinyatakan lolos tahap administrasi.", label: "Lolos Administrasi", icon: CheckCircle2, className: "border-emerald-200 bg-emerald-50 text-emerald-700" },
+  ditolak: { title: "Belum Lolos Administrasi", description: "Mohon maaf, pengajuan Anda belum dinyatakan lolos pada tahap administrasi.", label: "Belum Lolos", icon: XCircle, className: "border-rose-200 bg-rose-50 text-rose-700" },
+  kandidat_peraih: { title: "Selamat, Anda Lolos Administrasi!", description: "Pengajuan Anda telah lolos administrasi dan masuk ke tahap seleksi berikutnya.", label: "Lolos Administrasi", icon: Award, className: "border-blue-200 bg-blue-50 text-blue-700" },
+} satisfies Record<SubmissionStatus, { title: string; description: string; label: string; icon: typeof Award; className: string }>;
 
 const AdministrationResults = () => {
-  const [isLoading, setIsLoading] = useState(true);
+  const [isCheckingPublication, setIsCheckingPublication] = useState(true);
   const [isPublished, setIsPublished] = useState(false);
-  const [recipients, setRecipients] = useState<AdministrationRecipient[]>([]);
-  const [activeCategory, setActiveCategory] = useState<"all" | ScholarshipCategory>("all");
-  const [search, setSearch] = useState("");
+  const [isChecking, setIsChecking] = useState(false);
+  const [tokenCode, setTokenCode] = useState("");
+  const [result, setResult] = useState<AdministrationResult | null>(null);
+  const [message, setMessage] = useState("");
 
   useEffect(() => {
-    const fetchResults = async () => {
-      setIsLoading(true);
+    const fetchPublicationStatus = async () => {
       try {
-        const { data: setting, error: settingError } = await supabase
-          .from("admin_settings")
-          .select("setting_value")
-          .eq("setting_key", "administration_results_page")
-          .maybeSingle();
-
-        if (settingError) throw settingError;
-
-        const value = setting?.setting_value as { is_published?: boolean } | null;
-        const published = value?.is_published === true;
-        setIsPublished(published);
-
-        if (!published) return;
-
-        const { data, error } = await supabase.rpc("get_published_administration_results");
+        const { data, error } = await supabase.from("admin_settings").select("setting_value").eq("setting_key", "administration_results_page").maybeSingle();
         if (error) throw error;
-        setRecipients((data || []) as AdministrationRecipient[]);
+        const value = data?.setting_value as { is_published?: boolean } | null;
+        setIsPublished(value?.is_published === true);
       } catch (error) {
-        console.error("Gagal memuat pengumuman administrasi:", error);
+        console.error("Gagal memuat status publikasi:", error);
         setIsPublished(false);
       } finally {
-        setIsLoading(false);
+        setIsCheckingPublication(false);
       }
     };
-
-    fetchResults();
+    fetchPublicationStatus();
   }, []);
 
-  const filteredRecipients = useMemo(() => {
-    const keyword = search.trim().toLocaleLowerCase("id-ID");
-    return recipients.filter((recipient) => {
-      if (activeCategory !== "all" && recipient.category !== activeCategory) return false;
-      if (!keyword) return true;
-      return [recipient.full_name, recipient.institution_name, recipient.program_name]
-        .some((value) => value?.toLocaleLowerCase("id-ID").includes(keyword));
-    });
-  }, [activeCategory, recipients, search]);
+  const handleCheck = async (event: FormEvent) => {
+    event.preventDefault();
+    const normalizedToken = tokenCode.trim().toUpperCase();
+    if (!normalizedToken) {
+      setMessage("Masukkan kode token lisensi terlebih dahulu.");
+      return;
+    }
 
-  const categoryCounts = useMemo(() => ({
-    all: recipients.length,
-    prestasi: recipients.filter((recipient) => recipient.category === "prestasi").length,
-    yatim: recipients.filter((recipient) => recipient.category === "yatim").length,
-    ekonomi: recipients.filter((recipient) => recipient.category === "ekonomi").length,
-    umum: recipients.filter((recipient) => recipient.category === "umum").length,
-  }), [recipients]);
+    setIsChecking(true);
+    setResult(null);
+    setMessage("");
+    try {
+      const { data, error } = await supabase.rpc("get_administration_result_by_token", { p_token_code: normalizedToken });
+      if (error) throw error;
+      const submission = (data?.[0] || null) as AdministrationResult | null;
+      if (!submission) {
+        setMessage("Kode token tidak ditemukan atau belum memiliki pengajuan berkas.");
+        return;
+      }
+      setResult(submission);
+    } catch (error) {
+      console.error("Gagal memeriksa hasil administrasi:", error);
+      setMessage("Status belum dapat diperiksa. Silakan coba kembali beberapa saat lagi.");
+    } finally {
+      setIsChecking(false);
+    }
+  };
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Loader2 className="w-9 h-9 animate-spin text-primary" />
-      </div>
-    );
+  if (isCheckingPublication) {
+    return <div className="flex min-h-screen items-center justify-center bg-background"><Loader2 className="h-9 w-9 animate-spin text-primary" /></div>;
   }
 
   if (!isPublished) {
     return (
-      <div className="min-h-screen bg-background flex flex-col">
+      <div className="flex min-h-screen flex-col bg-background">
         <Navbar />
-        <main className="flex-1 flex items-center justify-center px-4 py-16">
+        <main className="flex flex-1 items-center justify-center px-4 py-16">
           <div className="max-w-lg text-center">
-            <div className="w-20 h-20 rounded-3xl bg-muted mx-auto mb-6 flex items-center justify-center">
-              <Award className="w-10 h-10 text-muted-foreground/40" />
-            </div>
-            <h1 className="text-2xl md:text-3xl font-bold mb-3">Pengumuman Belum Dipublikasikan</h1>
-            <p className="text-muted-foreground">
-              Hasil seleksi pengajuan administrasi masih dalam proses. Silakan periksa kembali halaman ini setelah pengumuman resmi dibuka.
-            </p>
+            <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-3xl bg-muted"><Award className="h-10 w-10 text-muted-foreground/40" /></div>
+            <h1 className="mb-3 text-2xl font-bold md:text-3xl">Pengumuman Belum Dipublikasikan</h1>
+            <p className="text-muted-foreground">Hasil seleksi administrasi masih dalam proses. Silakan periksa kembali setelah pengumuman resmi dibuka.</p>
           </div>
         </main>
         <Footer />
@@ -110,96 +98,61 @@ const AdministrationResults = () => {
     );
   }
 
+  const config = result ? statusConfig[result.status] : null;
+  const StatusIcon = config?.icon;
+
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="flex min-h-screen flex-col bg-background">
       <Navbar />
       <main className="flex-1">
         <section className="relative overflow-hidden border-b">
           <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/10 via-background to-primary/10" />
-          <div className="container relative mx-auto px-4 py-16 md:py-24 text-center">
-            <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-4 py-2 mb-6">
-              <CheckCircle2 className="w-5 h-5 text-emerald-600" />
-              <span className="text-sm font-semibold text-emerald-700">Pengumuman Resmi</span>
+          <div className="container relative mx-auto px-4 py-14 text-center md:py-20">
+            <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-4 py-2">
+              <CheckCircle2 className="h-5 w-5 text-emerald-600" /><span className="text-sm font-semibold text-emerald-700">Pengumuman Resmi</span>
             </div>
-            <h1 className="text-3xl md:text-5xl font-extrabold tracking-tight mb-4">
-              Peserta Lolos <span className="text-emerald-600">Pengajuan Administrasi</span>
-            </h1>
-            <p className="text-base md:text-lg text-muted-foreground max-w-2xl mx-auto">
-              Selamat kepada peserta yang telah dinyatakan lolos verifikasi administrasi Program Beasiswa Pendidikan Ayo Pintar.
-            </p>
+            <h1 className="mb-4 text-3xl font-extrabold tracking-tight md:text-5xl">Pengumuman <span className="text-emerald-600">Lolos Administrasi</span></h1>
+            <p className="mx-auto max-w-2xl text-muted-foreground md:text-lg">Masukkan kode token lisensi yang digunakan saat pendaftaran untuk melihat status pengajuan Anda.</p>
           </div>
         </section>
 
-        <section className="container mx-auto px-4 py-10">
-          <Card className="mb-8 border-emerald-500/20 bg-emerald-50/60 dark:bg-emerald-950/10">
-            <CardContent className="p-5 md:p-6 flex items-start gap-4">
-              <div className="w-12 h-12 shrink-0 rounded-2xl bg-emerald-500/10 flex items-center justify-center">
-                <GraduationCap className="w-6 h-6 text-emerald-600" />
-              </div>
-              <div>
-                <h2 className="font-semibold mb-1">Tahap Selanjutnya</h2>
-                <p className="text-sm text-muted-foreground">
-                  Peserta yang namanya tercantum dinyatakan lolos pengajuan administrasi. Informasi tahap berikutnya akan disampaikan melalui kanal resmi Ayo Pintar.
-                </p>
-              </div>
+        <section className="container mx-auto max-w-2xl px-4 py-10">
+          <Card className="shadow-lg">
+            <CardHeader className="text-center">
+              <div className="mx-auto mb-2 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10"><KeyRound className="h-7 w-7 text-primary" /></div>
+              <CardTitle>Cek Status Administrasi</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleCheck} className="space-y-4">
+                <div className="space-y-2">
+                  <label htmlFor="license-token" className="text-sm font-medium">Kode Token Lisensi</label>
+                  <Input id="license-token" value={tokenCode} onChange={(event) => setTokenCode(event.target.value.toUpperCase())} placeholder="Contoh: KP3P847291" className="h-12 text-center font-mono uppercase tracking-wider" autoComplete="off" />
+                </div>
+                <Button type="submit" className="h-12 w-full" disabled={isChecking}>
+                  {isChecking ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Search className="mr-2 h-4 w-4" />}Lihat Status
+                </Button>
+              </form>
+
+              {message && <div className="mt-6 rounded-xl border border-amber-200 bg-amber-50 p-4 text-center text-sm text-amber-800">{message}</div>}
+
+              {result && config && StatusIcon && (
+                <div className={`mt-6 rounded-2xl border p-5 ${config.className}`}>
+                  <div className="flex flex-col items-center text-center">
+                    <StatusIcon className="mb-3 h-12 w-12" />
+                    <Badge className="mb-3" variant="secondary">{config.label}</Badge>
+                    <h2 className="text-xl font-bold">{config.title}</h2>
+                    <p className="mt-2 text-sm opacity-90">{config.description}</p>
+                  </div>
+                  <div className="mt-5 grid gap-3 rounded-xl bg-white/70 p-4 text-sm sm:grid-cols-2">
+                    <div><p className="text-xs text-muted-foreground">Nama Peserta</p><p className="font-semibold text-foreground">{result.full_name}</p></div>
+                    <div><p className="text-xs text-muted-foreground">Program</p><p className="font-semibold text-foreground">{result.program_name}</p></div>
+                    <div><p className="text-xs text-muted-foreground">Kategori</p><p className="font-semibold capitalize text-foreground">{result.category}</p></div>
+                    <div><p className="text-xs text-muted-foreground">Asal Institusi</p><p className="font-semibold text-foreground">{result.institution_name || "Belum dicantumkan"}</p></div>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
-
-          <div className="flex flex-col lg:flex-row gap-4 items-center justify-between mb-8">
-            <div className="flex flex-wrap gap-2 justify-center lg:justify-start">
-              <button onClick={() => setActiveCategory("all")} className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${activeCategory === "all" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:text-foreground"}`}>
-                Semua ({categoryCounts.all})
-              </button>
-              {(Object.keys(categoryConfig) as ScholarshipCategory[]).map((category) => {
-                const config = categoryConfig[category];
-                const Icon = config.icon;
-                return (
-                  <button key={category} onClick={() => setActiveCategory(category)} className={`px-4 py-2 rounded-full text-sm font-medium transition-colors flex items-center gap-2 ${activeCategory === category ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:text-foreground"}`}>
-                    <Icon className="w-4 h-4" />
-                    {config.label} ({categoryCounts[category]})
-                  </button>
-                );
-              })}
-            </div>
-            <div className="relative w-full lg:w-80">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Cari nama atau institusi..." className="pl-9" />
-            </div>
-          </div>
-
-          {filteredRecipients.length === 0 ? (
-            <div className="text-center py-16">
-              <Award className="w-16 h-16 mx-auto text-muted-foreground/20 mb-4" />
-              <p className="text-muted-foreground">Tidak ada peserta yang sesuai dengan pencarian.</p>
-            </div>
-          ) : (
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {filteredRecipients.map((recipient, index) => {
-                const config = categoryConfig[recipient.category];
-                const Icon = config.icon;
-                return (
-                  <Card key={recipient.id} className="transition-all hover:-translate-y-1 hover:shadow-lg">
-                    <CardContent className="p-5 flex items-start gap-4">
-                      <div className="w-11 h-11 rounded-xl bg-emerald-500/10 text-emerald-700 flex items-center justify-center font-bold shrink-0">
-                        {index + 1}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <h3 className="font-semibold truncate">{recipient.full_name}</h3>
-                        <p className="text-sm text-muted-foreground truncate mt-0.5">{recipient.institution_name || "Institusi belum dicantumkan"}</p>
-                        <div className="flex flex-wrap gap-2 mt-3">
-                          <Badge variant="outline" className={`gap-1 ${config.className}`}>
-                            <Icon className="w-3 h-3" /> {config.label}
-                          </Badge>
-                          <Badge variant="secondary" className="capitalize">{recipient.applicant_status}</Badge>
-                          <Badge className="bg-emerald-600 hover:bg-emerald-600">Lolos</Badge>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                );
-              })}
-            </div>
-          )}
         </section>
       </main>
       <Footer />
@@ -208,4 +161,3 @@ const AdministrationResults = () => {
 };
 
 export default AdministrationResults;
-

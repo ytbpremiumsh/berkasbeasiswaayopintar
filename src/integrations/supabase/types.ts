@@ -742,15 +742,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      get_published_administration_results: {
-        Args: Record<PropertyKey, never>
+      get_administration_result_by_token: {
+        Args: { p_token_code: string }
         Returns: {
           applicant_status: Database["public"]["Enums"]["applicant_status"]
           category: Database["public"]["Enums"]["scholarship_category"]
           full_name: string
-          id: string
           institution_name: string | null
           program_name: string
+          status: Database["public"]["Enums"]["submission_status"]
         }[]
       }
       has_role: {
