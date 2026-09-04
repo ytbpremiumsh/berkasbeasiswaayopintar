@@ -447,7 +447,15 @@ export function AllSubmissions({ onStatusUpdate, programId, onNavigate }: AllSub
                         <TableCell>{idx + 1}</TableCell>
                         <TableCell>
                           <div>
-                            <p className="font-medium">{sub.full_name}</p>
+                            <div className="flex flex-wrap items-center gap-2">
+                              <p className="font-medium">{sub.full_name}</p>
+                              {getPaidTokenPrice(sub.token_price) !== null && (
+                                <Badge className="bg-amber-500/10 text-amber-600 border border-amber-500/20 gap-1 text-[10px] font-semibold">
+                                  <Crown className="w-3 h-3" />
+                                  Premium
+                                </Badge>
+                              )}
+                            </div>
                             <p className="text-xs text-muted-foreground">{sub.email}</p>
                           </div>
                         </TableCell>
@@ -463,10 +471,9 @@ export function AllSubmissions({ onStatusUpdate, programId, onNavigate }: AllSub
                               {sub.token_code}
                             </code>
                             {getPaidTokenPrice(sub.token_price) !== null && (
-                              <Badge className="bg-amber-500/10 text-amber-600 border border-amber-500/20 gap-1 text-[10px] font-medium">
-                                <Crown className="w-3 h-3" />
-                                Premium · {formatIDR(getPaidTokenPrice(sub.token_price)!)}
-                              </Badge>
+                              <span className="text-[10px] font-medium text-amber-600">
+                                {formatIDR(getPaidTokenPrice(sub.token_price)!)}
+                              </span>
                             )}
                           </div>
                         </TableCell>
@@ -509,7 +516,16 @@ export function AllSubmissions({ onStatusUpdate, programId, onNavigate }: AllSub
                                 {selectedSubmission && (
                                   <div className="space-y-4">
                                     <div className="grid grid-cols-2 gap-4 text-sm">
-                                      <div><span className="text-muted-foreground">Nama:</span> <strong>{selectedSubmission.full_name}</strong></div>
+                                      <div className="flex flex-wrap items-center gap-2">
+                                        <span className="text-muted-foreground">Nama:</span>
+                                        <strong>{selectedSubmission.full_name}</strong>
+                                        {getPaidTokenPrice(selectedSubmission.token_price) !== null && (
+                                          <Badge className="bg-amber-500/10 text-amber-600 border border-amber-500/20 gap-1 text-[10px] font-semibold">
+                                            <Crown className="w-3 h-3" />
+                                            Premium
+                                          </Badge>
+                                        )}
+                                      </div>
                                       <div><span className="text-muted-foreground">Email:</span> <strong>{selectedSubmission.email}</strong></div>
                                       <div><span className="text-muted-foreground">Telepon:</span> <strong>{selectedSubmission.phone || "-"}</strong></div>
                                       <div><span className="text-muted-foreground">Kategori:</span> <strong className="capitalize">{categoryConfig[selectedSubmission.category]?.label}</strong></div>
@@ -517,10 +533,9 @@ export function AllSubmissions({ onStatusUpdate, programId, onNavigate }: AllSub
                                       <div><span className="text-muted-foreground">Institusi:</span> <strong>{selectedSubmission.institution_name || "-"}</strong></div>
                                       <div><span className="text-muted-foreground">Kode Token:</span> <code className="text-xs bg-muted px-2 py-1 rounded font-mono">{selectedSubmission.token_code}</code>
                                         {getPaidTokenPrice(selectedSubmission.token_price) !== null && (
-                                          <Badge className="bg-amber-500/10 text-amber-600 border border-amber-500/20 gap-1 text-[10px] ml-2 align-middle">
-                                            <Crown className="w-3 h-3" />
-                                            Premium · {formatIDR(getPaidTokenPrice(selectedSubmission.token_price)!)}
-                                          </Badge>
+                                          <span className="text-xs font-medium text-amber-600 ml-2">
+                                            {formatIDR(getPaidTokenPrice(selectedSubmission.token_price)!)}
+                                          </span>
                                         )}
                                       </div>
                                       <div><span className="text-muted-foreground">Status:</span> <Badge variant={statusConfig[selectedSubmission.status]?.variant}>{statusConfig[selectedSubmission.status]?.label}</Badge></div>
