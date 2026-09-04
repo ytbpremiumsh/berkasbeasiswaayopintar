@@ -1,3 +1,4 @@
+import { registrationFailure } from "../_shared/registration-status.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -15,6 +16,13 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    const closure = await registrationFailure(supabase);
+    if (closure) {
+      return new Response(JSON.stringify({ success: false, error: closure.message, message: closure.message }), {
+        status: closure.status, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     const body = await req.json();
     const {
@@ -80,11 +88,7 @@ serve(async (req) => {
       .eq("is_active", true)
       .maybeSingle();
 
-    // Update token status
-    await supabase
-      .from("scholarship_tokens")
-      .update({ status: "digunakan", used_at: new Date().toISOString() })
-      .eq("id", tokenId);
+    // The database consumes the token atomically after a successful insert.
 
     // Insert submission with sessionId as user_id (for public submissions)
     const { error: insertError } = await supabase.from("scholarship_submissions").insert({
@@ -190,7 +194,6 @@ serve(async (req) => {
     } catch (mpwaErr) {
       console.error("MPWA notification error:", mpwaErr);
     }
-
 
     return new Response(
       JSON.stringify({ success: true, message: "Berkas berhasil dikirim" }),

@@ -1,3 +1,4 @@
+import { assertRegistrationOpen } from "@/lib/registration-status";
 import { useState, useRef } from "react";
 import { cn } from "@/lib/utils";
 import { Upload, X, FileText, Image, Loader2, ExternalLink } from "lucide-react";
@@ -49,6 +50,7 @@ export function FileUpload({
     setIsUploading(true);
 
     try {
+      await assertRegistrationOpen();
       const fileExt = file.name.split(".").pop();
       const fileName = `${folder}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
 
@@ -71,7 +73,7 @@ export function FileUpload({
       console.error("Upload error:", error);
       toast({
         title: "Gagal mengunggah",
-        description: "Terjadi kesalahan saat mengunggah file",
+        description: error instanceof Error ? error.message : "Terjadi kesalahan saat mengunggah file",
         variant: "destructive",
       });
     } finally {

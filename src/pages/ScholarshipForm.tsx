@@ -1,3 +1,4 @@
+import { assertRegistrationOpen } from "@/lib/registration-status";
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { ProgressSteps } from "@/components/ProgressSteps";
@@ -217,6 +218,7 @@ const ScholarshipForm = () => {
     setIsSubmitting(true);
 
     try {
+      await assertRegistrationOpen();
       // Submit application using edge function for public access
       const { data, error } = await supabase.functions.invoke("submit-scholarship", {
         body: {
@@ -245,7 +247,14 @@ const ScholarshipForm = () => {
         },
       });
 
-      if (error) throw error;
+      if (error) {
+        const response = error.context;
+        if (response instanceof Response) {
+          const payload = await response.json().catch(() => null);
+          if (payload?.message) throw new Error(payload.message);
+        }
+        throw error;
+      }
       if (!data.success) throw new Error(data.message);
 
       toast({ title: "Berhasil!", description: "Berkas beasiswa Anda telah terkirim." });
