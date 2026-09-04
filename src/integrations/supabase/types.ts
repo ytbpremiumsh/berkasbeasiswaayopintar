@@ -742,6 +742,17 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_published_administration_results: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          applicant_status: Database["public"]["Enums"]["applicant_status"]
+          category: Database["public"]["Enums"]["scholarship_category"]
+          full_name: string
+          id: string
+          institution_name: string | null
+          program_name: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

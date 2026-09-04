@@ -14,6 +14,7 @@ import ShortlinkRedirect from "./pages/ShortlinkRedirect";
 import NotFound from "./pages/NotFound";
 import PeraihBeasiswa from "./pages/PeraihBeasiswa";
 import RegistrationForm from "./pages/RegistrationForm";
+import AdministrationResults from "./pages/AdministrationResults";
 
 const queryClient = new QueryClient();
 
@@ -34,6 +35,7 @@ const App = () => (
           <Route path="/admin/login" element={<AdminLogin />} />
           <Route path="/admin" element={<AdminDashboard />} />
           <Route path="/peraih-beasiswa" element={<PeraihBeasiswa />} />
+          <Route path="/lolos-administrasi" element={<AdministrationResults />} />
           <Route path="/daftar/:category" element={<RegistrationForm />} />
           <Route path="*" element={<NotFound />} />
         </Routes>

@@ -23,6 +23,9 @@ export function Footer() {
             <Link to="/#kategori" className="hover:text-foreground transition-colors">
               Kategori Beasiswa
             </Link>
+            <Link to="/lolos-administrasi" className="hover:text-foreground transition-colors">
+              Lolos Administrasi
+            </Link>
             <Link to="/auth" className="hover:text-foreground transition-colors">
               Masuk
             </Link>
