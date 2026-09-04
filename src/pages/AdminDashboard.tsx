@@ -38,6 +38,7 @@ import { ExternalAppsManager } from "@/components/admin/ExternalAppsManager";
 import { ProgramManager } from "@/components/admin/ProgramManager";
 import { ProgramSelector } from "@/components/admin/ProgramSelector";
 import { SubmissionFiles } from "@/components/admin/SubmissionFiles";
+import { AdministrationResultsManager } from "@/components/admin/AdministrationResultsManager";
 
 import * as XLSX from "xlsx";
 import { cn } from "@/lib/utils";
@@ -717,6 +718,9 @@ const AdminDashboard = () => {
               </Card>
             </div>
           )}
+
+          {/* Administration Results */}
+          {activeTab === "administration-results" && <AdministrationResultsManager />}
 
           {/* Form Fields */}
           {activeTab === "form-fields" && <FormFieldsManager />}

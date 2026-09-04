@@ -1,4 +1,4 @@
-import { FileText, Key, FormInput, Settings, LayoutDashboard, LogOut, CheckSquare, Copy, BadgeCheck, PanelLeftClose, PanelLeft, Users, MonitorPlay, Wallet, ChevronDown, Image, Link2, ListChecks, Clock, MessageCircle, Code, Eye, Trophy, ClipboardList, UserPlus, AppWindow, GraduationCap, BarChart3 } from "lucide-react";
+import { FileText, Key, FormInput, Settings, LayoutDashboard, LogOut, CheckSquare, Copy, BadgeCheck, PanelLeftClose, PanelLeft, Users, MonitorPlay, Wallet, ChevronDown, Image, Link2, ListChecks, Clock, MessageCircle, Code, Eye, Trophy, ClipboardList, UserPlus, AppWindow, GraduationCap, BarChart3, Megaphone } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -30,6 +30,7 @@ const menuGroups = [
       { id: "candidates", label: "Kandidat Peraih", icon: Trophy },
       { id: "duplicates", label: "Duplikasi", icon: Copy },
       { id: "tokens", label: "Kode Token", icon: Key },
+      { id: "administration-results", label: "Pengumuman Lolos Administrasi", icon: Megaphone },
     ],
   },
   {

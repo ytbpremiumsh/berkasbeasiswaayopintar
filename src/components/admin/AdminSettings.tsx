@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
-import { Loader2, Save, Key, User, Mail, FileText, Trophy, Megaphone } from "lucide-react";
+import { Loader2, Save, Key, User, Mail, FileText, Trophy } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 export function AdminSettings() {
@@ -17,7 +17,6 @@ export function AdminSettings() {
   const [isSaving, setIsSaving] = useState(false);
   const [isSavingButton, setIsSavingButton] = useState(false);
   const [peraihPageActive, setPeraihPageActive] = useState(false);
-  const [administrationResultsPublished, setAdministrationResultsPublished] = useState(false);
   
   // Profile
   const [currentEmail, setCurrentEmail] = useState("");
@@ -41,7 +40,7 @@ export function AdminSettings() {
       const { data, error } = await supabase
         .from("admin_settings")
         .select("*")
-        .in("setting_key", ["mayar_api_key", "mayar_product_id", "check_status_button", "peraih_beasiswa_page", "administration_results_page"]);
+        .in("setting_key", ["mayar_api_key", "mayar_product_id", "check_status_button", "peraih_beasiswa_page"]);
 
       if (error) throw error;
 
@@ -55,9 +54,6 @@ export function AdminSettings() {
         }
         if (item.setting_key === "peraih_beasiswa_page") {
           setPeraihPageActive(val?.is_active === true);
-        }
-        if (item.setting_key === "administration_results_page") {
-          setAdministrationResultsPublished(val?.is_published === true);
         }
       });
     } catch (error) {
@@ -377,52 +373,6 @@ export function AdminSettings() {
           </Button>
         </CardContent>
       </Card>
-      {/* Peraih Beasiswa Page Toggle */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center">
-              <Megaphone className="w-6 h-6 text-white" />
-            </div>
-            <div>
-              <CardTitle>Pengumuman Lolos Administrasi</CardTitle>
-              <CardDescription>Publikasikan peserta yang pengajuannya sudah berstatus diverifikasi</CardDescription>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <p className="text-sm font-medium">Publikasikan Pengumuman</p>
-              <p className="text-xs text-muted-foreground">
-                {administrationResultsPublished
-                  ? "Daftar peserta lolos administrasi dapat dilihat oleh publik"
-                  : "Daftar peserta masih disembunyikan dari publik"}
-              </p>
-            </div>
-            <Switch
-              checked={administrationResultsPublished}
-              onCheckedChange={async (checked) => {
-                setAdministrationResultsPublished(checked);
-                try {
-                  const { error } = await supabase
-                    .from("admin_settings")
-                    .upsert({
-                      setting_key: "administration_results_page",
-                      setting_value: { is_published: checked },
-                    }, { onConflict: "setting_key" });
-                  if (error) throw error;
-                  toast({ title: checked ? "Pengumuman dipublikasikan" : "Pengumuman disembunyikan" });
-                } catch (error: any) {
-                  setAdministrationResultsPublished(!checked);
-                  toast({ title: "Gagal menyimpan", description: error.message, variant: "destructive" });
-                }
-              }}
-            />
-          </div>
-        </CardContent>
-      </Card>
-
       {/* Peraih Beasiswa Page Toggle */}
       <Card>
         <CardHeader>
