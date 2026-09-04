@@ -134,6 +134,26 @@ serve(async (req) => {
     // License is valid, now sync to database
     // (Supabase client already created above)
 
+    // Resolve paid amount from the related Mayar transaction (0 = free token)
+    const mayarTxId: string | null = licenseData.transactionId || null;
+    let tokenPrice: number | null = null;
+    if (mayarTxId) {
+      try {
+        const txRes = await fetch(`https://api.mayar.id/hl/v2/transactions/${mayarTxId}`, {
+          headers: { "Authorization": `Bearer ${MAYAR_API_KEY}` },
+        });
+        if (txRes.ok) {
+          const txData = await txRes.json();
+          const amount = txData?.data?.amount;
+          if (typeof amount === "number") tokenPrice = amount;
+        }
+      } catch (e) {
+        console.error("Failed to fetch Mayar transaction amount:", e);
+      }
+    } else {
+      tokenPrice = 0;
+    }
+
     // Check if token exists in our database, if not create it
     const { data: existingToken, error: fetchError } = await supabase
       .from("scholarship_tokens")
@@ -145,7 +165,15 @@ serve(async (req) => {
 
     if (existingToken) {
       tokenId = existingToken.id;
-      
+
+      // Backfill pricing info for tokens created before this feature
+      if (existingToken.price === null && tokenPrice !== null) {
+        await supabase
+          .from("scholarship_tokens")
+          .update({ mayar_transaction_id: mayarTxId, price: tokenPrice })
+          .eq("id", tokenId);
+      }
+
       // If already used, reject
       if (existingToken.status === "digunakan") {
         return new Response(
@@ -179,6 +207,8 @@ serve(async (req) => {
           token_code: licenseCode.trim().toUpperCase(),
           category: useCategory,
           status: "valid",
+          mayar_transaction_id: mayarTxId,
+          price: tokenPrice,
         })
         .select()
         .single();
