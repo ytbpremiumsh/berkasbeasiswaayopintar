@@ -23,6 +23,14 @@ const categoryConfig: Record<ScholarshipCategory, { label: string; icon: any; gr
   umum: { label: "Umum", icon: Globe, gradient: "from-blue-500 to-indigo-500" },
 };
 
+const formatIDR = (amount: number) =>
+  new Intl.NumberFormat("id-ID", {
+    style: "currency",
+    currency: "IDR",
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(amount);
+
 const statusConfig: Record<SubmissionStatus, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
   menunggu: { label: "Menunggu", variant: "secondary" },
   diverifikasi: { label: "Diverifikasi", variant: "default" },
@@ -43,6 +51,7 @@ interface Submission {
   verified_by: string | null;
   verified_at: string | null;
   token_code?: string;
+  token_price?: number | null;
   verified_by_name?: string;
   kartu_pelajar_url: string | null;
   ktm_url: string | null;
@@ -87,7 +96,7 @@ export function AllSubmissions({ onStatusUpdate, programId, onNavigate }: AllSub
         .from("scholarship_submissions")
         .select(`
           *,
-          scholarship_tokens!token_id (token_code)
+          scholarship_tokens!token_id (token_code, price)
         `)
         .order("submitted_at", { ascending: false });
 
@@ -114,6 +123,7 @@ export function AllSubmissions({ onStatusUpdate, programId, onNavigate }: AllSub
       const subsWithDetails = data?.map(s => ({
         ...s,
         token_code: s.scholarship_tokens?.token_code || "Unknown",
+        token_price: typeof s.scholarship_tokens?.price === "number" ? s.scholarship_tokens.price : null,
         verified_by_name: s.verified_by ? profileMap.get(s.verified_by) || "Admin" : undefined
       })) || [];
 
@@ -443,9 +453,17 @@ export function AllSubmissions({ onStatusUpdate, programId, onNavigate }: AllSub
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          <code className="text-xs bg-muted px-2 py-1 rounded font-mono">
-                            {sub.token_code}
-                          </code>
+                          <div className="flex flex-col items-start gap-1">
+                            <code className="text-xs bg-muted px-2 py-1 rounded font-mono">
+                              {sub.token_code}
+                            </code>
+                            {sub.token_price != null && sub.token_price > 0 && (
+                              <Badge className="bg-amber-500/10 text-amber-600 border border-amber-500/20 gap-1 text-[10px] font-medium">
+                                <Wallet className="w-3 h-3" />
+                                Token Berbayar · {formatIDR(sub.token_price)}
+                              </Badge>
+                            )}
+                          </div>
                         </TableCell>
                         <TableCell>
                           <Badge variant={statConfig?.variant}>{statConfig?.label || sub.status}</Badge>
@@ -492,7 +510,14 @@ export function AllSubmissions({ onStatusUpdate, programId, onNavigate }: AllSub
                                       <div><span className="text-muted-foreground">Kategori:</span> <strong className="capitalize">{categoryConfig[selectedSubmission.category]?.label}</strong></div>
                                       <div><span className="text-muted-foreground">Status Pendaftar:</span> <strong className="capitalize">{selectedSubmission.applicant_status?.replace("_", " ")}</strong></div>
                                       <div><span className="text-muted-foreground">Institusi:</span> <strong>{selectedSubmission.institution_name || "-"}</strong></div>
-                                      <div><span className="text-muted-foreground">Kode Token:</span> <code className="text-xs bg-muted px-2 py-1 rounded font-mono">{selectedSubmission.token_code}</code></div>
+                                      <div><span className="text-muted-foreground">Kode Token:</span> <code className="text-xs bg-muted px-2 py-1 rounded font-mono">{selectedSubmission.token_code}</code>
+                                        {selectedSubmission.token_price != null && selectedSubmission.token_price > 0 && (
+                                          <Badge className="bg-amber-500/10 text-amber-600 border border-amber-500/20 gap-1 text-[10px] ml-2 align-middle">
+                                            <Wallet className="w-3 h-3" />
+                                            Token Berbayar · {formatIDR(selectedSubmission.token_price)}
+                                          </Badge>
+                                        )}
+                                      </div>
                                       <div><span className="text-muted-foreground">Status:</span> <Badge variant={statusConfig[selectedSubmission.status]?.variant}>{statusConfig[selectedSubmission.status]?.label}</Badge></div>
                                       {selectedSubmission.verified_by_name && (
                                         <div className="col-span-2">
