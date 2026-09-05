@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useState } from "react";
 import { Award, CheckCircle2, Clock3, KeyRound, Loader2, Search, XCircle } from "lucide-react";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
@@ -26,29 +26,10 @@ const statusConfig = {
 } satisfies Record<SubmissionStatus, { title: string; description: string; label: string; icon: typeof Award; className: string }>;
 
 const AdministrationResults = () => {
-  const [isCheckingPublication, setIsCheckingPublication] = useState(true);
-  const [isPublished, setIsPublished] = useState(false);
   const [isChecking, setIsChecking] = useState(false);
   const [tokenCode, setTokenCode] = useState("");
   const [result, setResult] = useState<AdministrationResult | null>(null);
   const [message, setMessage] = useState("");
-
-  useEffect(() => {
-    const fetchPublicationStatus = async () => {
-      try {
-        const { data, error } = await supabase.from("admin_settings").select("setting_value").eq("setting_key", "administration_results_page").maybeSingle();
-        if (error) throw error;
-        const value = data?.setting_value as { is_published?: boolean } | null;
-        setIsPublished(value?.is_published === true);
-      } catch (error) {
-        console.error("Gagal memuat status publikasi:", error);
-        setIsPublished(false);
-      } finally {
-        setIsCheckingPublication(false);
-      }
-    };
-    fetchPublicationStatus();
-  }, []);
 
   const handleCheck = async (event: FormEvent) => {
     event.preventDefault();
@@ -62,6 +43,19 @@ const AdministrationResults = () => {
     setResult(null);
     setMessage("");
     try {
+      const { data: setting, error: settingError } = await supabase
+        .from("admin_settings")
+        .select("setting_value")
+        .eq("setting_key", "administration_results_page")
+        .maybeSingle();
+      if (settingError) throw settingError;
+
+      const publication = setting?.setting_value as { is_published?: boolean } | null;
+      if (publication?.is_published !== true) {
+        setMessage("Pengumuman belum dipublikasikan. Silakan periksa kembali setelah pengumuman resmi dibuka.");
+        return;
+      }
+
       const { data, error } = await supabase.rpc("get_administration_result_by_token", { p_token_code: normalizedToken });
       if (error) throw error;
       const submission = (data?.[0] || null) as AdministrationResult | null;
@@ -78,26 +72,6 @@ const AdministrationResults = () => {
     }
   };
 
-  if (isCheckingPublication) {
-    return <div className="flex min-h-screen items-center justify-center bg-background"><Loader2 className="h-9 w-9 animate-spin text-primary" /></div>;
-  }
-
-  if (!isPublished) {
-    return (
-      <div className="flex min-h-screen flex-col bg-background">
-        <Navbar />
-        <main className="flex flex-1 items-center justify-center px-4 py-16">
-          <div className="max-w-lg text-center">
-            <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-3xl bg-muted"><Award className="h-10 w-10 text-muted-foreground/40" /></div>
-            <h1 className="mb-3 text-2xl font-bold md:text-3xl">Pengumuman Belum Dipublikasikan</h1>
-            <p className="text-muted-foreground">Hasil seleksi administrasi masih dalam proses. Silakan periksa kembali setelah pengumuman resmi dibuka.</p>
-          </div>
-        </main>
-        <Footer />
-      </div>
-    );
-  }
-
   const config = result ? statusConfig[result.status] : null;
   const StatusIcon = config?.icon;
 
@@ -105,10 +79,11 @@ const AdministrationResults = () => {
     <div className="flex min-h-screen flex-col bg-background">
       <Navbar />
       <main className="flex-1">
-        <section className="relative overflow-hidden border-b">
-          <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/10 via-background to-primary/10" />
-          <div className="container relative mx-auto px-4 py-14 text-center md:py-20">
-            <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-4 py-2">
+        <section className="relative overflow-hidden border-b bg-gradient-to-br from-emerald-50 via-white to-sky-50">
+          <div className="absolute -left-24 top-8 h-64 w-64 rounded-full bg-emerald-300/20 blur-3xl" />
+          <div className="absolute -right-24 bottom-0 h-72 w-72 rounded-full bg-sky-300/20 blur-3xl" />
+          <div className="container relative mx-auto px-4 py-12 text-center md:py-16">
+            <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-white/80 px-4 py-2 shadow-sm backdrop-blur">
               <CheckCircle2 className="h-5 w-5 text-emerald-600" /><span className="text-sm font-semibold text-emerald-700">Pengumuman Resmi</span>
             </div>
             <h1 className="mb-4 text-3xl font-extrabold tracking-tight md:text-5xl">Pengumuman <span className="text-emerald-600">Lolos Administrasi</span></h1>
@@ -116,11 +91,13 @@ const AdministrationResults = () => {
           </div>
         </section>
 
-        <section className="container mx-auto max-w-2xl px-4 py-10">
-          <Card className="shadow-lg">
+        <section className="container mx-auto max-w-2xl px-4 py-10 md:-mt-4">
+          <Card className="overflow-hidden border-0 shadow-xl ring-1 ring-border/60">
+            <div className="h-1.5 bg-gradient-to-r from-emerald-500 via-primary to-sky-500" />
             <CardHeader className="text-center">
               <div className="mx-auto mb-2 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10"><KeyRound className="h-7 w-7 text-primary" /></div>
               <CardTitle>Cek Status Administrasi</CardTitle>
+              <p className="text-sm text-muted-foreground">Gunakan token lisensi yang sama dengan saat mengirim berkas.</p>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleCheck} className="space-y-4">
@@ -133,7 +110,12 @@ const AdministrationResults = () => {
                 </Button>
               </form>
 
-              {message && <div className="mt-6 rounded-xl border border-amber-200 bg-amber-50 p-4 text-center text-sm text-amber-800">{message}</div>}
+              {message && (
+                <div className="mt-6 flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+                  <Clock3 className="mt-0.5 h-5 w-5 shrink-0" />
+                  <p>{message}</p>
+                </div>
+              )}
 
               {result && config && StatusIcon && (
                 <div className={`mt-6 rounded-2xl border p-5 ${config.className}`}>
