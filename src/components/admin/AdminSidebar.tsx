@@ -93,10 +93,9 @@ export function AdminSidebar({ activeTab, onTabChange, onLogout, isCollapsed = f
     }));
   };
 
-  // Staff can only access Main Menu
-  const filteredMenuGroups = userRole === "staff" 
-    ? menuGroups.filter(group => group.id === "main")
-    : menuGroups;
+  // Show the complete navigation for both admin and staff accounts.
+  // Database permissions remain enforced by Supabase RLS policies.
+  const filteredMenuGroups = menuGroups;
 
   return (
     <aside className={cn(
